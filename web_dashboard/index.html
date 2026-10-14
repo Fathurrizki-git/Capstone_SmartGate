@@ -677,7 +677,6 @@ h1,h2,h3,p{margin:0}
             <option value="STUDENT">Student</option>
             <option value="LECTURER">Lecturer</option>
             <option value="ACADEMIC COMMUNITY">Academic Community</option>
-            <option value="GUEST">Guest</option>
           </select>
           <select class="select" id="vl-dir" aria-label="Filter arah">
             <option value="ALL">IN &amp; OUT</option>
@@ -873,8 +872,8 @@ h1,h2,h3,p{margin:0}
      DATA (simulasi output sistem ALPR)
      ========================================================= */
   var CAPACITY = 100, OVERNIGHT = 35;
-  var CATEGORIES = ['STUDENT', 'LECTURER', 'ACADEMIC COMMUNITY', 'GUEST'];
-  var CAT_COLORS = { 'STUDENT': '#0075ff', 'LECTURER': '#2cd9ff', 'ACADEMIC COMMUNITY': '#01b574', 'GUEST': '#ffb547' };
+  var CATEGORIES = ['STUDENT', 'LECTURER', 'ACADEMIC COMMUNITY'];
+  var CAT_COLORS = { 'STUDENT': '#0075ff', 'LECTURER': '#2cd9ff', 'ACADEMIC COMMUNITY': '#01b574' };
   var FIRST = ['Ahmad', 'Budi', 'Citra', 'Dewi', 'Eka', 'Fajar', 'Gilang', 'Hana', 'Indra', 'Joko', 'Kartika', 'Lina', 'Muhammad', 'Nanda', 'Oktavia', 'Putri', 'Rizky', 'Salsa', 'Taufik', 'Umar', 'Vina', 'Wahyu', 'Yoga', 'Zahra', 'Andi', 'Bayu', 'Dimas', 'Farhan', 'Intan', 'Raka'];
   var LASTN = ['Pratama', 'Saputra', 'Lestari', 'Wijaya', 'Hidayat', 'Nugraha', 'Permata', 'Ramadhan', 'Kusuma', 'Santoso', 'Maulana', 'Fitriani', 'Hakim', 'Siregar', 'Utami'];
   var REGIONS = ['A', 'A', 'A', 'B', 'B', 'F', 'D', 'T'];
@@ -882,7 +881,7 @@ h1,h2,h3,p{margin:0}
 
   function weightedCat(r) {
     var x = r();
-    return x < 0.55 ? 'STUDENT' : x < 0.75 ? 'LECTURER' : x < 0.9 ? 'ACADEMIC COMMUNITY' : 'GUEST';
+    return x < 0.60 ? 'STUDENT' : x < 0.82 ? 'LECTURER' : 'ACADEMIC COMMUNITY';
   }
   function makePlate(r) {
     var len = 1 + Math.floor(r() * 3), suf = '';

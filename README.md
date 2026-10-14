@@ -20,7 +20,7 @@ Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recog
 - **Trendline & Analisis Per Jam:** Grafik SVG interaktif dengan tooltip yang menampilkan volume kendaraan masuk vs keluar per jam.
 - **Vehicle Log Terintegrasi:**
   - Pencarian nomor plat & nama pengendara secara live.
-  - Filter kategori (Mahasiswa, Dosen, Tendik, Tamu) & arah (IN/OUT).
+  - Filter kategori (Student, Lecturer, Academic Community) & arah (IN/OUT).
   - Multi-column sorting (Waktu, Plat, Kategori, Confidence).
   - Paginasi dinamis dan modal detail kendaraan.
   - **Ekspor CSV:** Unduh log kendaraan harian langsung dalam format CSV.
