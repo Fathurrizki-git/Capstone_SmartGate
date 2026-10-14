@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="LoginPage_Global.css">
   <link rel="stylesheet" href="LoginPage_StyleGuide.css">
+  <script src="supabase_config.js"></script>
   <style>
     :root {
       --blue: #0075ff;
@@ -336,12 +337,49 @@
 
   <script>
     (function () {
-      var DEMO = { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki' };
+      var DEFAULT_USERS = [
+        { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki', role: 'Admin' },
+        { email: 'petugas@untirta.ac.id', password: 'petugas123', name: 'Budi Santoso', role: 'Petugas Gerbang' },
+        { email: 'operator@untirta.ac.id', password: 'operator123', name: 'Siti Rahma', role: 'Operator' }
+      ];
+
+      async function verifyUser(email, pass) {
+        var cfg = window.SUPABASE_CONFIG || {};
+        if (cfg.url && cfg.anonKey && !cfg.url.includes('YOUR_PROJECT_ID')) {
+          try {
+            var base = cfg.url.replace(/\/+$/, '');
+            var res = await fetch(base + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&password=eq.' + encodeURIComponent(pass) + '&select=*', {
+              headers: {
+                'apikey': cfg.anonKey,
+                'Authorization': 'Bearer ' + cfg.anonKey
+              }
+            });
+            if (res.ok) {
+              var rows = await res.json();
+              if (rows && rows.length > 0) {
+                return { email: rows[0].email, name: rows[0].name, role: rows[0].role || 'Petugas' };
+              }
+            }
+          } catch (err) {
+            console.warn('Gagal koneksi ke Supabase:', err);
+          }
+        }
+
+        var found = DEFAULT_USERS.find(function (u) {
+          return u.email.toLowerCase() === email.toLowerCase() && u.password === pass;
+        });
+        if (found) {
+          return { email: found.email, name: found.name, role: found.role };
+        }
+        return null;
+      }
+
       var form = document.getElementById('login-form');
       var emailInp = document.getElementById('login-email');
       var passInp = document.getElementById('login-pass');
       var errBox = document.getElementById('login-error');
       var toggleBtn = document.getElementById('toggle-pass');
+      var submitBtn = form.querySelector('.btn-submit');
 
       toggleBtn.addEventListener('click', function () {
         var show = passInp.type === 'password';
@@ -356,7 +394,7 @@
         inp.addEventListener('input', function () { errBox.style.display = 'none'; });
       });
 
-      form.addEventListener('submit', function (e) {
+      form.addEventListener('submit', async function (e) {
         e.preventDefault();
         var email = emailInp.value.trim().toLowerCase();
         var pass = passInp.value;
@@ -365,17 +403,29 @@
           errBox.style.display = 'block';
           return;
         }
-        if (email !== DEMO.email || pass !== DEMO.password) {
-          errBox.textContent = 'Email atau password salah.';
-          errBox.style.display = 'block';
-          return;
-        }
+
+        submitBtn.disabled = true;
+        var origText = submitBtn.textContent;
+        submitBtn.textContent = 'MEMVERIFIKASI...';
+
         try {
-          var data = JSON.stringify({ email: email, name: DEMO.name });
+          var user = await verifyUser(email, pass);
+          if (!user) {
+            errBox.textContent = 'Email atau password salah.';
+            errBox.style.display = 'block';
+            return;
+          }
+          var data = JSON.stringify({ email: user.email, name: user.name, role: user.role || 'Admin' });
           if (document.getElementById('remember').checked) localStorage.setItem('spg_auth', data);
           else sessionStorage.setItem('spg_auth', data);
-        } catch (e) {}
-        window.location.href = 'index.html#/dashboard';
+          window.location.href = 'index.html#/dashboard';
+        } catch (ex) {
+          errBox.textContent = 'Terjadi kesalahan sistem.';
+          errBox.style.display = 'block';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = origText;
+        }
       });
     })();
   </script>

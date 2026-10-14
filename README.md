@@ -82,15 +82,37 @@ pip install -r requirements-rpi.txt
 ```
 
 #### 2. Konfigurasi Kredensial
-Buka file `config.py` dan sesuaikan parameter berikut:
+Buka file `config.py` dan sesuaikan parameter Supabase Anda:
 ```python
 API_TOKEN = "token_platerecognizer_anda"
-FIREBASE_ENABLED = True
-FIREBASE_DB_URL = "https://your-database-name.firebaseio.com/"
+
+# Database: Supabase (PostgreSQL Cloud)
+DATABASE_PROVIDER = "supabase"
+SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
+SUPABASE_KEY = "YOUR_SUPABASE_ANON_OR_SERVICE_KEY"
+
 CAMERA_INDEX = 0  # 0 untuk webcam bawaan, 1 untuk USB webcam eksternal
 ```
 
-#### 3. Menjalankan Deteksi
+#### 3. Setup Tabel Database di Supabase
+1. Masuk ke Dashboard Supabase Anda, lalu buka **SQL Editor**.
+2. Buka file [schema.sql](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/schema.sql) di proyek ini, salin seluruh kodenya, lalu klik **Run**.
+3. Tabel `users`, `registered_vehicles`, dan `vehicle_logs` akan langsung terbuat lengkap dengan data awal.
+
+#### 4. Mengelola User (Tambah / Hapus / Lihat)
+Gunakan script CLI [manage_users.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/manage_users.py):
+```bash
+# Melihat daftar user di Supabase:
+python manage_users.py --list
+
+# Menambah user baru:
+python manage_users.py --add
+
+# Menghapus user:
+python manage_users.py --delete email@untirta.ac.id
+```
+
+#### 5. Menjalankan Deteksi
 * **Mode Kamera Otomatis (Live Deploy):**
   ```bash
   python main.py --camera

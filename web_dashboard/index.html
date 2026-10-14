@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="supabase_config.js"></script>
 <style>
 /* ==========================================================
    DESIGN TOKENS (diambil dari *_StyleGuide.css)
@@ -523,7 +524,7 @@ h1,h2,h3,p{margin:0}
       </div>
       <div class="user-chip">
         <span class="avatar js-avatar">F</span>
-        <div><div class="u-name js-username">Fathurrizki</div><div class="u-role">Admin</div></div>
+        <div><div class="u-name js-username">Fathurrizki</div><div class="u-role js-role">Admin</div></div>
         <button class="icon-btn" id="logout-btn" title="Logout" aria-label="Logout" data-icon="logout"></button>
       </div>
     </div>
@@ -967,10 +968,47 @@ h1,h2,h3,p{margin:0}
   function unreadCount() { return state.alerts.filter(function (a) { return !a.read; }).length; }
 
   /* =========================================================
-     AUTH
+     AUTH (Supabase Cloud Database + Offline Fallback)
      ========================================================= */
   var AUTH_KEY = 'spg_auth';
-  var DEMO = { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki' };
+  var DEFAULT_USERS = [
+    { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki', role: 'Admin' },
+    { email: 'petugas@untirta.ac.id', password: 'petugas123', name: 'Budi Santoso', role: 'Petugas Gerbang' },
+    { email: 'operator@untirta.ac.id', password: 'operator123', name: 'Siti Rahma', role: 'Operator' }
+  ];
+
+  async function verifyUser(email, pass) {
+    // 1. Coba verifikasi ke Supabase jika konfigurasi tersedia
+    var cfg = window.SUPABASE_CONFIG || {};
+    if (cfg.url && cfg.anonKey && !cfg.url.includes('YOUR_PROJECT_ID')) {
+      try {
+        var base = cfg.url.replace(/\/+$/, '');
+        var res = await fetch(base + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&password=eq.' + encodeURIComponent(pass) + '&select=*', {
+          headers: {
+            'apikey': cfg.anonKey,
+            'Authorization': 'Bearer ' + cfg.anonKey
+          }
+        });
+        if (res.ok) {
+          var rows = await res.json();
+          if (rows && rows.length > 0) {
+            return { email: rows[0].email, name: rows[0].name, role: rows[0].role || 'Petugas' };
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal koneksi ke Supabase, menggunakan fallback akun lokal:', err);
+      }
+    }
+
+    // 2. Fallback offline: gunakan default accounts
+    var found = DEFAULT_USERS.find(function (u) {
+      return u.email.toLowerCase() === email.toLowerCase() && u.password === pass;
+    });
+    if (found) {
+      return { email: found.email, name: found.name, role: found.role };
+    }
+    return null;
+  }
   function safeGet(store) { try { return store.getItem(AUTH_KEY); } catch (e) { return null; } }
   function getAuth() {
     var raw = safeGet(window.localStorage) || safeGet(window.sessionStorage);
@@ -1441,8 +1479,10 @@ h1,h2,h3,p{margin:0}
     $('#login-view').hidden = true;
     $('#app-view').hidden = false;
     var name = user.name || 'Admin';
+    var role = user.role || 'Admin';
     $$('.js-username').forEach(function (el) { el.textContent = name; });
-    $$('.js-username-admin').forEach(function (el) { el.textContent = name + ' (Admin)'; });
+    $$('.js-username-admin').forEach(function (el) { el.textContent = name + ' (' + role + ')'; });
+    $$('.js-role').forEach(function (el) { el.textContent = role; });
     $$('.js-avatar').forEach(function (el) { el.textContent = name.charAt(0).toUpperCase(); });
     $$('.view').forEach(function (v) { v.hidden = v.dataset.view !== route; });
     $$('.nav a').forEach(function (a) {
@@ -1613,20 +1653,38 @@ h1,h2,h3,p{margin:0}
      ========================================================= */
   function bind() {
     // Login
-    $('#login-form').addEventListener('submit', function (e) {
+    $('#login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
       var email = $('#login-email').value.trim().toLowerCase();
       var pass = $('#login-pass').value;
       var err = $('#login-error');
+      var btn = $('#login-form button[type="submit"]');
       var show = function (m) { err.textContent = m; err.hidden = false; };
       if (!email || !pass) return show('Email dan password wajib diisi.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return show('Format email tidak valid.');
-      if (email !== DEMO.email || pass !== DEMO.password) return show('Email atau password salah.');
-      err.hidden = true;
-      setAuth({ email: email, name: DEMO.name }, $('#remember').checked);
-      $('#login-pass').value = '';
-      toast('Selamat datang kembali, ' + DEMO.name + '!', 'success');
-      if (getRoute() === 'dashboard') router(); else location.hash = '#/dashboard';
+
+      btn.disabled = true;
+      var origText = btn.textContent;
+      btn.textContent = 'Memverifikasi...';
+
+      try {
+        var user = await verifyUser(email, pass);
+        if (!user) {
+          btn.disabled = false;
+          btn.textContent = origText;
+          return show('Email atau password salah.');
+        }
+        err.hidden = true;
+        setAuth({ email: user.email, name: user.name, role: user.role || 'Admin' }, $('#remember').checked);
+        $('#login-pass').value = '';
+        toast('Selamat datang, ' + user.name + ' (' + (user.role || 'Admin') + ')!', 'success');
+        if (getRoute() === 'dashboard') router(); else location.hash = '#/dashboard';
+      } catch (ex) {
+        show('Gagal memverifikasi akun: ' + (ex.message || ex));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
     });
     $('#toggle-pass').addEventListener('click', function () {
       var inp = $('#login-pass'), show = inp.type === 'password';

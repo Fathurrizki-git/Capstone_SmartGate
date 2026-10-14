@@ -26,7 +26,16 @@ SAVE_RESULTS = True                         # Simpan hasil deteksi
 OUTPUT_DIR = "output/"                      # Folder output
 SHOW_PREVIEW = True                         # Tampilkan preview (False jika headless)
 
-# ── Firebase ─────────────────────────────────────
-FIREBASE_ENABLED = True                     # Ubah ke False jika ingin mematikan fitur DB
+# ── Database Provider ─────────────────────────────
+# Pilihan: "supabase" (direkomendasikan) atau "firebase"
+DATABASE_PROVIDER = "supabase"
+
+# ── Supabase (PostgreSQL Cloud) ───────────────────
+# Dapatkan dari: Supabase Dashboard -> Project Settings -> API
+SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
+SUPABASE_KEY = "YOUR_SUPABASE_ANON_OR_SERVICE_KEY"
+
+# ── Firebase (Opsional / Cadangan) ────────────────
+FIREBASE_ENABLED = False                    # Ubah ke True jika ingin kembali menggunakan Firebase
 FIREBASE_CREDENTIALS = "serviceAccountKey.json"
-FIREBASE_DB_URL = "https://alpr-fb61b-default-rtdb.asia-southeast1.firebasedatabase.app/"  # GANTI INI DENGAN URL DATABASE-MU
+FIREBASE_DB_URL = "https://alpr-fb61b-default-rtdb.asia-southeast1.firebasedatabase.app/"

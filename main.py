@@ -26,7 +26,13 @@ import threading
 
 import config
 from plate_recognizer import PlateRecognizerAPI, draw_results
-from firebase_logger import FirebaseLogger
+
+# Inisialisasi Logger sesuai pilihan di config.py
+provider = getattr(config, 'DATABASE_PROVIDER', 'supabase').lower()
+if provider == 'supabase':
+    from supabase_logger import SupabaseLogger
+else:
+    from firebase_logger import FirebaseLogger
 
 
 class ALPRPipeline:
@@ -39,11 +45,15 @@ class ALPRPipeline:
         print("=" * 50)
         print("  ALPR System — Raspberry Pi 4")
         print("  Mode: Cloud API (Plate Recognizer)")
+        print(f"  Database: {provider.upper()}")
         print("=" * 50)
 
         # Inisialisasi API client & Database
         self.api = PlateRecognizerAPI()
-        self.db = FirebaseLogger()
+        if provider == 'supabase':
+            self.db = SupabaseLogger()
+        else:
+            self.db = FirebaseLogger()
 
         # Cek kuota API
         usage = self.api.check_usage()
