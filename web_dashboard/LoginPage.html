@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Smart Parking Gate FT Untirta sign-in portal">
+  <title>Smart Parking Gate FT Untirta</title>
+  <link rel="stylesheet" href="globals.css">
+  <link rel="stylesheet" href="styleguide.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    /** @type {import('tailwindcss').Config} */
+    tailwind.config = {
+      corePlugins: {
+        preflight: false,
+      },
+      theme: {
+        extend: {
+          colors: {
+            "blackampwhitewhite": "var(--blackampwhitewhite)",
+            "graygray-400": "var(--graygray-400)"
+          }
+        }
+      },
+      plugins: []
+    };
+  </script>
+</head>
+<body>
+  <main class="w-full min-w-[1920px] min-h-[1032px] relative">
+    <section class="absolute h-[1038px] -top-1.5 left-0 flex items-start min-w-[1920px]" aria-label="Smart Parking Gate sign-in">
+      <div class="w-[1920px] h-[1038px] relative">
+        <footer class="absolute top-0 left-0 h-[1038px] flex px-[404px] py-[15px] justify-end items-end min-w-[1920px] [background:linear-gradient(159deg,rgba(15,18,59,1)_0%,rgba(9,13,46,1)_59%,rgba(2,5,21,1)_100%)]">
+          <div class="w-[139px] flex">
+            <div class="w-[141px] flex">
+              <p class="w-[139px] h-[21px] [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-[#a0aec0] text-sm text-center tracking-[0] leading-[21px] whitespace-nowrap">
+                © 2026 Capstone A7
+              </p>
+            </div>
+          </div>
+        </footer>
+        <section class="absolute w-[960px] h-[1032px] top-1.5 left-0 flex bg-[url(legacy:image:md5:32:300)] bg-[100%_100%]" aria-label="Portal introduction">
+          <div class="mt-[480px] w-[628px] h-[72px] ml-[168px] flex flex-col gap-4">
+            <p class="ml-[150px] w-[324px] h-5 [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[3.60px] leading-5 whitespace-nowrap">
+              INSPIRED BY THE FUTURE:
+            </p>
+            <h1 class="w-[624px] h-9 [background:linear-gradient(156deg,rgba(255,255,255,1)_0%,rgba(33,36,47,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-transparent text-4xl text-center tracking-[6.48px] leading-9 whitespace-nowrap">
+              THE VISION UI DASHBOARD
+            </h1>
+          </div>
+        </section>
+        <form class="absolute w-[18.23%] h-[38.33%] top-[26.59%] left-[66.56%]" action="#" method="post" aria-labelledby="welcome-heading">
+          <div class="absolute top-0 left-px w-[223px] h-[66px] flex flex-col gap-[6.5px]">
+            <h2 id="welcome-heading" class="w-[219px] h-[39px] text-white text-3xl tracking-[0] leading-[39.0px] whitespace-nowrap">
+              Welcome Back
+            </h2>
+            <p class="w-[163px] h-5 [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-graygray-400 text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
+              Please enter your details
+            </p>
+          </div>
+          <div class="absolute w-[100.57%] h-[18.75%] top-[25.38%] left-0">
+            <div class="flex w-[100.57%] h-[72.34%] items-center px-5 py-0 absolute top-[30.35%] left-0 rounded-[20px] overflow-hidden border-[none] backdrop-blur-[21px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(21px)_brightness(100%)] [background:linear-gradient(75deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.04)_100%)]">
+              <label class="sr-only" for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required placeholder="Your email address" class="flex flex-col w-[311px] items-start justify-center relative overflow-hidden bg-transparent border-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-graygray-400 text-sm tracking-[0] leading-[19.6px] placeholder:text-graygray-400">
+            </div>
+            <label for="email" class="absolute top-0 left-1 text-white text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
+              Email
+            </label>
+          </div>
+          <div class="absolute w-[100.57%] h-[18.72%] top-[50.26%] left-0">
+            <div class="flex w-[100.57%] h-[72.42%] items-center px-5 py-0 absolute top-[30.26%] left-0 rounded-[20px] overflow-hidden border-[none] backdrop-blur-[21px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(21px)_brightness(100%)] [background:linear-gradient(75deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.04)_100%)]">
+              <label class="sr-only" for="password">Password</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password" class="flex flex-col w-[311px] items-start justify-center relative overflow-hidden bg-transparent border-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-graygray-400 text-sm tracking-[0] leading-[19.6px] placeholder:text-graygray-400">
+            </div>
+            <label for="password" class="absolute top-0 left-1 text-white text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
+              Password
+            </label>
+          </div>
+          <div class="absolute top-[298px] left-px w-[133px] h-[19px]">
+            <label for="remember-me" class="absolute top-px left-[46px] text-white text-xs tracking-[0] leading-[18.0px] whitespace-nowrap cursor-pointer">
+              Remember me
+            </label>
+            <div class="flex flex-col w-[27.07%] h-[99.81%] items-end justify-center gap-[9.34px] pl-[1.44px] pr-[2.5px] py-[1.44px] absolute top-0 left-0 bg-[#0075ff] rounded-[97.74px] overflow-hidden">
+              <input id="remember-me" name="remember-me" type="checkbox" class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0">
+              <span class="relative w-[13.5px] h-[13.5px] bg-blackampwhitewhite rounded-[6.75px] pointer-events-none"></span>
+            </div>
+          </div>
+          <button type="submit" class="flex w-[100.00%] h-[11.30%] items-center justify-center px-2 py-0 absolute top-[88.70%] left-0 bg-[#0075ff] rounded-xl backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)]">
+            <span class="inline-flex flex-col items-center justify-center relative flex-[0_0_auto] overflow-hidden">
+              <span class="inline-flex h-6 items-center relative">
+                <span class="inline-flex items-start gap-1 relative flex-[0_0_auto] overflow-hidden">
+                  <span class="relative flex items-center justify-center w-fit mt-[-0.50px] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-white text-[10px] text-center tracking-[0] leading-[15.0px] whitespace-nowrap">
+                    SIGN IN
+                  </span>
+                </span>
+              </span>
+              <span class="inline-flex items-start px-3 py-0 relative flex-[0_0_auto]">
+                <span class="relative w-px h-px mr-[-1.00px] bg-[#c4c4c4]"></span>
+              </span>
+            </span>
+          </button>
+        </form>
+        <img class="absolute top-0 left-0 w-[967px] h-[1032px] aspect-[0.94]" src="img/image-1.png" alt="Smart Parking Gate building">
+        <div class="absolute -top-1.5 left-0 w-[967px] h-[1038px] [background:linear-gradient(159deg,rgba(15,18,59,0.52)_0%,rgba(9,13,46,0.52)_59%,rgba(2,5,21,0.52)_100%)]" aria-hidden="true"></div>
+        <div class="absolute top-[30px] left-[34px] w-[341px] h-20 rounded-[20px] backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)] [background:linear-gradient(128deg,rgba(6,11,38,0.68)_0%,rgba(26,31,55,0.36)_100%)]" aria-hidden="true"></div>
+        <p class="absolute top-[54px] left-[122px] [background:linear-gradient(133deg,rgba(255,255,255,1)_0%,rgba(117,122,140,0)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-transparent text-base tracking-[2.88px] leading-4">
+          SMART PARKING GATE<br>
+          FT UNTIRTA
+        </p>
+        <img class="absolute top-[41px] left-[51px] w-[59px] h-[59px] aspect-[1] object-cover" src="img/LOGO-UNTIRTA-1.png" alt="Universitas Sultan Ageng Tirtayasa logo">
+      </div>
+    </section>
+  </main>
+</body>
+</html>

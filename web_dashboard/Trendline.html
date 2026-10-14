@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trendline | Smart Parking Gate Dashboard</title>
+<link rel="stylesheet" href="globals.css">
+<link rel="stylesheet" href="styleguide.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script> /** @type {import('tailwindcss').Config} */ tailwind.config = {
+      corePlugins: {
+        preflight: false
+      },
+      theme: {
+        extend: {
+          colors: {
+            "graygray-300": "var(--graygray-300)",
+            "graygray-400": "var(--graygray-400)",
+            "graygray-500": "var(--graygray-500)",
+            "secondaryprimary-white": "var(--secondaryprimary-white)"
+          }
+        }
+      },
+      plugins: []
+    };
+</script>
+</head>
+<body>
+<div class="bg-[#060b26] overflow-x-hidden w-full min-w-[1920px] min-h-[1155px] relative">
+<img class="absolute top-0 left-0 w-[1920px] h-[1155px]" src="img/background.png" alt="" aria-hidden="true">
+<header class="absolute w-[1561px] h-[38px] top-[37px] left-[314px] flex gap-[1325px]">
+<div class="mt-0 w-[115.5px] h-[38px] flex flex-col gap-1.5">
+<div class="flex ml-[0.5px] w-[113px] h-3 relative flex-col items-start gap-[5px]">
+<p class="relative w-fit mt-[-0.50px] [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-transparent text-xs tracking-[0] leading-3 whitespace-nowrap">
+<span class="text-[#a0aec0]">Pages </span>
+<span class="text-white"> &nbsp; </span>
+<span class="[font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-white">/ &nbsp;&nbsp; Trendline</span>
+</p>
+</div>
+<div class="w-[61px] h-5 [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-white text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
+Trendline
+</div>
+</div>
+<div class="mt-3 w-[120px] flex">
+<div class="flex w-[120px] h-4 relative items-center gap-1 overflow-hidden">
+<img class="relative w-3 h-3" src="img/image.svg" alt="" aria-hidden="true">
+<div class="relative flex items-center w-fit mt-[-1.50px] mb-[-0.50px] [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-graygray-500 text-xs tracking-[0] leading-[18.0px] whitespace-nowrap">
+Fathurizki (Admin)
+</div>
+</div>
+</div>
+</header>
+<main>
+<section class="absolute w-[1541px] h-[997px] top-[93px] left-[314px] flex flex-col gap-[93.3px] rounded-[20px] backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)] [background:linear-gradient(128deg,rgba(6,11,40,0.74)_0%,rgba(10,14,35,0.71)_100%)]" aria-labelledby="trendline-title">
+<div class="ml-[31px] w-[308.12px] h-[81.7px] relative mt-5">
+<div class="absolute top-[41px] left-[100px] w-[74px] h-10 rounded-[20px] backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)] [background:linear-gradient(128deg,rgba(6,11,38,0.89)_0%,rgba(26,31,55,0.5)_100%)]" aria-hidden="true"></div>
+<nav aria-label="Trendline time range">
+<button type="button" class="left-[18px] w-[67px] absolute top-12 [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-graygray-400 text-sm tracking-[0] leading-[19.6px]" aria-pressed="true">
+1 Hour
+</button>
+<button type="button" class="left-[122px] w-[57px] absolute top-12 [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-graygray-400 text-sm tracking-[0] leading-[19.6px]" aria-pressed="false">
+1 Day
+</button>
+<button type="button" class="left-[217px] w-[83px] absolute top-12 [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-graygray-400 text-sm tracking-[0] leading-[19.6px]" aria-pressed="false">
+1 Month
+</button>
+</nav>
+<h1 id="trendline-title" class="absolute top-0 left-0 w-[133px] text-secondaryprimary-white text-lg tracking-[0] leading-[25.2px]">
+<span class="text-white text-lg tracking-[0] leading-[25.2px]">Trendline</span>
+</h1>
+</div>
+<figure class="ml-[35.8px] flex items-start min-w-[1468.94px]" aria-labelledby="trendline-title">
+<div class="w-[1469px] h-[778px] relative">
+<div class="absolute top-[739px] left-[69px] w-[1398px] h-[39px] flex gap-[55px]" aria-label="Time axis">
+<p class="w-[53.36px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">00:00</span></p>
+<p class="mt-0 w-[53.36px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">02:00</span></p>
+<p class="mt-0 w-[55.02px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">04:00</span></p>
+<p class="mt-0 w-[56.69px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">06:00</span></p>
+<p class="mt-0 w-[51.69px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">08:00</span></p>
+<p class="mt-0 w-[58.36px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">10:00</span></p>
+<p class="mt-0 w-[51.69px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">12:00</span></p>
+<p class="mt-0 w-[48.35px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">14:00</span></p>
+<p class="mt-0 w-[55.02px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">16:00</span></p>
+<p class="mt-0 w-[56.69px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">18:00</span></p>
+<p class="mt-0 w-[50.02px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">20:00</span></p>
+<p class="mt-0 w-[60.02px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">22:00</span></p>
+<p class="mt-0 w-[61.69px] h-[39.36px] text-graygray-300 text-[10px] tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">24:00</span></p>
+</div>
+<div class="absolute top-0 left-0 w-[1481px] h-[695px]" aria-label="Vehicle count scale">
+<p class="top-[656px] left-2 w-3 absolute h-[39px] flex items-center justify-center text-graygray-300 text-[10px] text-center tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">0</span></p>
+<p class="top-[525px] left-px w-7 absolute h-[39px] flex items-center justify-center text-graygray-300 text-[10px] text-center tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">40</span></p>
+<p class="top-[394px] left-px w-7 absolute h-[39px] flex items-center justify-center text-graygray-300 text-[10px] text-center tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">80</span></p>
+<p class="top-[262px] left-px w-7 absolute h-[39px] flex items-center justify-center text-graygray-300 text-[10px] text-center tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">120</span></p>
+<p class="top-[131px] left-px w-7 absolute h-[39px] flex items-center justify-center text-graygray-300 text-[10px] text-center tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">160</span></p>
+<p class="top-0 left-0 w-7 absolute h-[39px] flex items-center justify-center text-graygray-300 text-[10px] text-center tracking-[0] leading-[15px]"><span class="text-[#cbd5e0] text-[10px] tracking-[0] leading-[15px]">200</span></p>
+<div class="top-5 w-[1401px] h-[656px] flex-col gap-[130.2px] absolute left-[68px] flex" aria-hidden="true">
+<img class="-mt-px w-[1400.58px] h-px object-cover" src="img/line-4.svg" alt="">
+<img class="w-[1400.58px] h-px object-cover" src="img/line-5.svg" alt="">
+<img class="w-[1400.58px] h-px object-cover" src="img/line-6.svg" alt="">
+<img class="w-[1400.58px] h-px object-cover" src="img/line-7.svg" alt="">
+<img class="w-[1400.58px] h-px object-cover" src="img/line-8.svg" alt="">
+<img class="w-[1400.58px] h-px object-cover" src="img/line-9.svg" alt="">
+</div>
+</div>
+<div class="w-[1399px] h-[614px] top-[60px] absolute left-[68px] flex">
+<div class="mt-0 w-[1398.92px] h-[614px] ml-0 flex bg-[url(legacy:image:md5:48:1554)] bg-[100%_100%]">
+<img class="mt-[-1.5px] w-[1400.3px] h-[379.17px] ml-[-1.0px]" src="img/vector-1.svg" alt="Vehicle count trend from 00:00 to 24:00">
+</div>
+</div>
+</div>
+</figure>
+</section>
+</main>
+<aside class="fixed top-2.5 left-2.5 w-[264px] h-[1128px] flex flex-col rounded-[20px] backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)] [background:linear-gradient(127deg,rgba(6,11,38,0.94)_0%,rgba(26,31,55,0)_100%)]" aria-label="Primary navigation">
+<div class="ml-[18px] w-[226px] mt-[13px] flex gap-[13px]">
+<img class="w-10 h-10 aspect-[1] object-cover" src="img/LOGO-UNTIRTA-1.png" alt="Untirta logo">
+<p class="mt-2.5 w-[171px] h-[22px] [background:linear-gradient(133deg,rgba(255,255,255,1)_0%,rgba(117,122,140,0)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-transparent text-[11px] tracking-[1.98px] leading-[11px]">
+SMART PARKING GATE <br>DASHBOARD FT UNTIRTA
+</p>
+</div>
+<img class="ml-[15px] w-[233.25px] h-px mt-7 object-cover" src="img/vector-6.svg" alt="" aria-hidden="true">
+<nav class="ml-[22px] w-[219.5px] h-48 mt-[34px] flex flex-col" aria-label="Dashboard sections">
+<a class="ml-4 w-[122px] h-[30px] relative" href="#" aria-label="Dashboard">
+<img class="top-0 left-0 absolute w-[30px] h-[30px]" src="img/rectangle-3.svg" alt="" aria-hidden="true">
+<img class="absolute top-2 left-2 w-[15px] h-[15px]" src="img/default-3.svg" alt="" aria-hidden="true">
+<span class="absolute top-2 left-[45px] h-3.5 flex items-center [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-white text-sm tracking-[0] leading-[14px] whitespace-nowrap">Dashboard</span>
+</a>
+<a class="ml-0 w-[221.5px] h-[54px] relative mt-[11px]" href="#" aria-current="page" aria-label="Trendline">
+<span class="absolute top-0 left-0 w-[220px] h-[54px] bg-[#1a1f37] rounded-[15px] shadow-[0px_3.5px_5.5px_#00000005]" aria-hidden="true"></span>
+<span class="top-[13px] left-4 bg-[#0075ff] rounded-xl shadow-[0px_3.5px_5.5px_#00000005] absolute w-[30px] h-[30px]" aria-hidden="true"></span>
+<img class="absolute top-5 left-6 w-[15px] h-[15px]" src="img/chart.svg" alt="" aria-hidden="true">
+<span class="absolute top-[21px] left-[62px] h-3.5 flex items-center [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-white text-sm tracking-[0] leading-[14px] whitespace-nowrap">Trendline</span>
+</a>
+<a class="ml-4 w-[119.5px] h-[30px] relative mt-[13px]" href="#" aria-label="Vehicle Log">
+<span class="absolute top-0 left-0 w-[30px] h-[30px] bg-[#1a1f37] rounded-xl shadow-[0px_3.5px_5.5px_#00000005]" aria-hidden="true"></span>
+<img class="absolute top-2 left-2 w-[15px] h-[15px]" src="img/default-2.svg" alt="" aria-hidden="true">
+<span class="absolute top-2 left-10 h-3.5 flex items-center [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-white text-sm tracking-[0] leading-[14px] whitespace-nowrap">Vehicle Log</span>
+</a>
+<a class="ml-[16.0px] w-[185.5px] h-[30px] relative mt-6" href="#" aria-label="Security Notification">
+<span class="absolute top-0 left-0 w-[30px] h-[30px] bg-[#1a1f37] rounded-xl shadow-[0px_3.5px_5.5px_#00000005]" aria-hidden="true"></span>
+<img class="absolute top-2 left-2 w-[15px] h-[15px]" src="img/default.svg" alt="" aria-hidden="true">
+<span class="absolute top-2 left-[46px] h-3.5 flex items-center [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-white text-sm tracking-[0] leading-[14px] whitespace-nowrap">Security Notification</span>
+</a>
+</nav>
+</aside>
+<footer class="absolute top-[1101px] left-[333px] w-[141px] h-[21px] flex">
+<p class="w-[139px] h-[21px] [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-[#a0aec0] text-sm tracking-[0] leading-[21px] whitespace-nowrap">
+© 2026 Capstone A7
+</p>
+</footer>
+</div>
+</body>
+</html>

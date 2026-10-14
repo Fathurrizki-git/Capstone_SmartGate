@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Smart Parking Gate Dashboard FT Untirta - ALPR Monitoring">
+<title>Smart Parking Gate | FT Untirta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================
+   DESIGN TOKENS (diambil dari *_StyleGuide.css)
+   ========================================================== */
+:root{
+  --graygray-300:#cbd5e0;
+  --graygray-400:#a0aec0;
+  --graygray-500:#718096;
+  --white:#ffffff;
+  --red:#ff383c;
+  --blue:#0075ff;
+  --cyan:#2cd9ff;
+  --green:#01b574;
+  --orange:#ffb547;
+  --bg:#060b26;
+  --nav-item:#1a1f37;
+  --line:rgba(226,232,240,.10);
+  --card-bg:linear-gradient(128deg,rgba(6,11,40,.74) 0%,rgba(10,14,35,.71) 100%);
+  --radius:20px;
+  --font:'Plus Jakarta Sans','Segoe UI',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:var(--font);color:var(--white);font-size:14px;line-height:1.4;
+  background-color:var(--bg);
+  background-image:
+    url("img/Background.png"),
+    url("img/background.png"),
+    url("img/wp9649930-1.png"),
+    radial-gradient(ellipse at 85% 10%,rgba(0,117,255,.22),transparent 55%),
+    radial-gradient(ellipse at 10% 90%,rgba(44,217,255,.10),transparent 50%),
+    linear-gradient(159deg,#0f123b 0%,#090d2e 59%,#020515 100%);
+  background-size:cover;background-attachment:fixed;background-position:center;
+}
+[hidden]{display:none!important}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4a90e2;outline-offset:2px}
+h1,h2,h3,p{margin:0}
+.muted{color:var(--graygray-400)}
+.ic{display:inline-block;vertical-align:middle;flex-shrink:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+/* ---------- Logo ---------- */
+.logo{position:relative;display:inline-flex;width:40px;height:40px;flex-shrink:0}
+.logo svg,.logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.brand-text{
+  font-weight:700;font-size:11px;letter-spacing:1.98px;line-height:13px;
+  background:linear-gradient(133deg,#fff 0%,rgba(117,122,140,.25) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+}
+
+/* ---------- Buttons / inputs ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;
+  padding:10px 16px;font-weight:700;font-size:12px;color:#fff;background:var(--nav-item);transition:transform .15s,filter .15s,background .15s}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--blue)}
+.btn-green{background:linear-gradient(128deg,rgba(11,144,13,.85) 0%,rgba(8,72,12,.85) 100%);border-radius:20px}
+.btn-danger{background:rgba(255,56,60,.18);color:#ff8a8c}
+.btn-ghost{background:rgba(255,255,255,.06)}
+.btn-block{width:100%;height:45px;font-size:11px;letter-spacing:.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;border:0;
+  background:transparent;color:var(--graygray-400);transition:background .15s,color .15s}
+.icon-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.input{display:flex;align-items:center;gap:8px;height:46px;padding:0 6px 0 18px;border-radius:20px;
+  border:1px solid rgba(226,232,240,.25);
+  background:linear-gradient(75deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 100%);transition:border-color .15s}
+.input:focus-within{border-color:var(--blue)}
+.input input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:#fff;font:500 14px var(--font)}
+.input input::placeholder{color:var(--graygray-400)}
+.input.sm{height:38px;border-radius:14px;padding-left:12px}
+.input.sm input{font-size:13px}
+.select{height:38px;border-radius:14px;border:1px solid rgba(226,232,240,.25);background:#0b1033;color:#fff;
+  padding:0 12px;font:500 13px var(--font);outline:none;cursor:pointer}
+.select:focus{border-color:var(--blue)}
+
+/* switch */
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:12px}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .track{position:relative;width:36px;height:19px;border-radius:99px;background:#2d3250;transition:background .2s}
+.switch .track::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked + .track{background:var(--blue)}
+.switch input:checked + .track::after{transform:translateX(16px)}
+.switch input:focus-visible + .track{outline:2px solid #4a90e2;outline-offset:2px}
+
+/* ==========================================================
+   LOGIN
+   ========================================================== */
+.login{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+.login-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:
+    linear-gradient(159deg,rgba(15,18,59,.55) 0%,rgba(9,13,46,.55) 59%,rgba(2,5,21,.7) 100%),
+    url("img/image-1.png") center/cover no-repeat,
+    radial-gradient(circle at 30% 30%,#1b2a8a 0%,#0b1150 45%,#040722 100%)}
+.login-hero .orb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
+.login-hero .orb.o1{width:420px;height:420px;left:-120px;bottom:-120px;background:radial-gradient(circle,rgba(0,117,255,.55),transparent 70%)}
+.login-hero .orb.o2{width:300px;height:300px;right:-60px;top:12%;background:radial-gradient(circle,rgba(44,217,255,.35),transparent 70%)}
+.brand-card{position:absolute;top:30px;left:34px;display:flex;align-items:center;gap:14px;padding:10px 22px 10px 16px;border-radius:20px;
+  background:linear-gradient(128deg,rgba(6,11,38,.68) 0%,rgba(26,31,55,.36) 100%);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}
+.brand-card .logo{width:59px;height:59px}
+.brand-card .brand-text{font-size:16px;letter-spacing:2.88px;line-height:18px}
+.hero-copy{position:relative;text-align:center;padding:0 24px}
+.hero-copy p{font-size:20px;letter-spacing:3.6px;margin-bottom:16px}
+.hero-copy h2{font-size:clamp(22px,2.6vw,36px);font-weight:700;letter-spacing:6.48px;
+  background:linear-gradient(156deg,#fff 0%,#5b6280 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.login-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;position:relative}
+.login-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px}
+.login-form h1{font-size:30px;font-weight:700}
+.field{display:flex;flex-direction:column;gap:8px}
+.field > label{font-size:14px;font-weight:500;padding-left:4px}
+.form-error{background:rgba(255,56,60,.12);border:1px solid rgba(255,56,60,.4);color:#ff8a8c;padding:10px 14px;border-radius:12px;font-size:13px}
+.hint{font-size:12px;color:var(--graygray-400);text-align:center}
+.hint code{color:#fff;background:rgba(255,255,255,.08);padding:2px 6px;border-radius:6px;font-size:11.5px}
+.login-panel footer{position:absolute;bottom:18px;color:var(--graygray-400);font-size:14px}
+
+/* ==========================================================
+   APP SHELL
+   ========================================================== */
+.sidebar{position:fixed;top:10px;left:10px;bottom:10px;width:264px;z-index:40;display:flex;flex-direction:column;padding:16px 18px;border-radius:20px;
+  background:linear-gradient(127deg,rgba(6,11,38,.94) 0%,rgba(26,31,55,.55) 100%);backdrop-filter:blur(60px);-webkit-backdrop-filter:blur(60px);
+  transition:transform .25s ease}
+.sb-brand{display:flex;align-items:center;gap:13px;padding:0 4px}
+.sb-divider{height:1px;margin:24px 0 22px;background:linear-gradient(90deg,rgba(224,225,226,0) 0%,rgba(224,225,226,.7) 50%,rgba(224,225,226,.16) 100%)}
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav a{display:flex;align-items:center;gap:14px;height:54px;padding:0 16px;border-radius:15px;font-weight:500;color:#fff;transition:background .2s}
+.nav a .nav-ic{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:12px;background:var(--nav-item);color:var(--blue);transition:background .2s,color .2s}
+.nav a:hover{background:rgba(26,31,55,.6)}
+.nav a.active{background:var(--nav-item);box-shadow:0 3.5px 5.5px rgba(0,0,0,.02)}
+.nav a.active .nav-ic{background:var(--blue);color:#fff}
+.nav .badge{margin-left:auto}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--red);color:#fff;font-size:11px;font-weight:700}
+.sb-footer{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+.help-card{padding:18px;border-radius:18px;background:radial-gradient(circle at 20% 0%,rgba(0,117,255,.9),rgba(0,117,255,.25) 70%),#0b1033;overflow:hidden;position:relative}
+.help-card h4{margin:10px 0 4px;font-size:14px}
+.help-card p{font-size:12px;color:rgba(255,255,255,.8)}
+.help-card .hc-ic{display:inline-flex;width:34px;height:34px;border-radius:12px;background:#fff;color:var(--blue);align-items:center;justify-content:center}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:15px;background:rgba(26,31,55,.6)}
+.avatar{width:34px;height:34px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;background:linear-gradient(135deg,var(--blue),var(--cyan))}
+.user-chip .u-name{font-weight:600;font-size:13px}
+.user-chip .u-role{font-size:11px;color:var(--graygray-400)}
+.user-chip .icon-btn{margin-left:auto}
+.sb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:35;display:none}
+
+.main{margin-left:298px;padding:26px 24px 20px 16px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.tb-left{display:flex;align-items:center;gap:12px}
+.crumb{font-size:12px;color:var(--graygray-400)}
+.crumb b{color:#fff;font-weight:500}
+.page-title{font-size:14px;font-weight:600;margin-top:4px}
+.tb-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tb-right .input{width:220px}
+.chip{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:14px;background:rgba(26,31,55,.6);font-size:12px;color:var(--graygray-300)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--graygray-500)}
+.live-on .live-dot{background:var(--green);box-shadow:0 0 0 0 rgba(1,181,116,.6);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(1,181,116,.6)}70%{box-shadow:0 0 0 8px rgba(1,181,116,0)}100%{box-shadow:0 0 0 0 rgba(1,181,116,0)}}
+.bell{position:relative}
+.bell .badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;font-size:10px;padding:0 4px}
+.menu-btn{display:none}
+.app-footer{margin-top:auto;padding-top:24px;color:var(--graygray-400);font-size:14px}
+
+/* ==========================================================
+   CARDS & GRID
+   ========================================================== */
+.view{animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{position:relative;min-width:0;border-radius:var(--radius);padding:24px;background:var(--card-bg);
+  backdrop-filter:blur(60px);-webkit-backdrop-filter:blur(60px);box-shadow:0 3.5px 5.5px rgba(0,0,0,.02)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.card-title{font-size:18px;font-weight:700;line-height:25px}
+.card-sub{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--graygray-400);margin-top:4px}
+.card-sub.red{color:var(--red)}
+.card-sub.green{color:var(--green)}
+.grid{display:grid;gap:24px;margin-bottom:24px}
+.g-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g-2a{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+.g-2b{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+.g-2c{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.g-sec{grid-template-columns:minmax(0,1fr) minmax(0,1.9fr)}
+
+.metric{display:flex;align-items:center;justify-content:space-between;padding:18px 20px}
+.metric .m-label{font-size:12px;font-weight:500;color:var(--graygray-400)}
+.metric .m-val{font-size:20px;font-weight:700;margin-top:4px}
+.metric .m-val small{font-size:12px;font-weight:700;margin-left:6px}
+.metric .m-ic{width:45px;height:45px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff}
+.up{color:var(--green)}.down{color:var(--red)}
+
+.welcome{
+  min-height:330px;
+  display:flex;
+  flex-direction:row;
+  justify-content:space-between;
+  align-items:center;
+  overflow:hidden;
+  position:relative;
+  padding:28px 32px;
+  background:
+    radial-gradient(circle at 25% 35%, rgba(13, 27, 75, 0.85) 0%, rgba(6, 11, 40, 0.95) 70%),
+    linear-gradient(128deg, rgba(6, 11, 40, .94) 0%, rgba(14, 21, 58, .85) 100%);
+}
+.welcome-content{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  z-index:2;
+  flex:1;
+  min-width:0;
+  padding-right:20px;
+}
+.welcome .w-sub{font-size:14px;font-weight:500;color:var(--graygray-400)}
+.welcome h2{font-size:clamp(24px, 2.5vw, 32px);font-weight:700;margin:6px 0 10px;color:#fff;letter-spacing:-0.4px;line-height:1.2}
+.welcome .w-msg{font-size:15px;color:var(--graygray-400);margin:0}
+.welcome .clock-big{font-size:36px;font-weight:700;letter-spacing:1px;margin-top:10px;color:#fff}
+.welcome .w-actions{display:flex;gap:10px;flex-wrap:wrap;position:relative;margin-top:16px}
+.welcome .w-crodas-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2;
+  flex-shrink:0;
+}
+.welcome .w-crodas-card{
+  position:relative;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 12px 32px rgba(0,0,0,.5);
+  background:#060b26;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .3s ease,box-shadow .3s ease;
+}
+.welcome .w-crodas-card:hover{
+  transform:scale(1.02);
+  box-shadow:0 14px 38px rgba(0,117,255,.35);
+}
+.welcome .w-crodas{
+  display:block;
+  max-height:280px;
+  width:auto;
+  max-width:100%;
+  object-fit:contain;
+}
+
+.capacity{display:flex;flex-direction:column}
+.cap-body{display:flex;align-items:center;gap:24px;flex:1;flex-wrap:wrap;justify-content:center}
+.gauge{position:relative;width:200px;height:200px;flex-shrink:0}
+.gauge svg{width:100%;height:100%}
+.g-track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:14}
+.g-val{fill:none;stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.g-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.g-pct{font-size:34px;font-weight:700}
+.g-sub{font-size:12px;color:var(--graygray-400)}
+.cap-stats{display:flex;flex-direction:column;gap:12px;min-width:160px}
+.cap-stat{padding:12px 16px;border-radius:16px;background:linear-gradient(127deg,rgba(6,11,40,.94) 19%,rgba(10,14,35,.49) 76%);border:1px solid rgba(255,255,255,.05)}
+.cap-stat .k{font-size:12px;color:var(--graygray-400)}
+.cap-stat .v{font-size:18px;font-weight:700}
+
+/* chart */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart .grid-l{stroke:rgba(86,87,122,.45);stroke-dasharray:5 5;stroke-width:1}
+.chart .axis{fill:var(--graygray-300);font-size:10px;font-family:var(--font)}
+.chart .hover-line{stroke:rgba(255,255,255,.35);stroke-width:1}
+.chart-tip{position:absolute;top:0;pointer-events:none;z-index:5;min-width:130px;padding:10px 12px;border-radius:12px;
+  background:rgba(11,16,51,.96);border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:12px;opacity:0;transition:opacity .12s}
+.chart-tip.show{opacity:1}
+.chart-tip .t-h{font-weight:700;margin-bottom:6px}
+.chart-tip .t-r{display:flex;align-items:center;gap:8px;color:var(--graygray-300)}
+.chart-tip .t-r b{margin-left:auto;color:#fff}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--graygray-300)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.seg{display:inline-flex;padding:4px;border-radius:16px;background:linear-gradient(128deg,rgba(6,11,38,.89) 0%,rgba(26,31,55,.5) 100%)}
+.seg button{border:0;background:transparent;color:var(--graygray-400);font:500 13px var(--font);padding:8px 16px;border-radius:12px;transition:background .15s,color .15s}
+.seg button:hover{color:#fff}
+.seg button.active{background:var(--blue);color:#fff}
+
+.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.stat-box{padding:14px 16px;border-radius:16px;background:rgba(26,31,55,.45)}
+.stat-box .k{font-size:12px;color:var(--graygray-400)}
+.stat-box .v{font-size:20px;font-weight:700;margin-top:2px}
+.stat-box .s{font-size:11px;color:var(--graygray-500)}
+
+/* category bars */
+.cat-list{display:flex;flex-direction:column;gap:16px}
+.cat-item .ci-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.cat-item .ci-top span:last-child{color:var(--graygray-400)}
+.bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar > i{display:block;height:100%;border-radius:99px;background:var(--blue);transition:width .5s ease}
+
+/* table */
+.table-wrap{width:100%;overflow-x:auto}
+.table{width:100%;border-collapse:collapse;min-width:820px}
+.table th{font-size:10px;font-weight:500;color:var(--graygray-400);text-align:left;padding:0 12px 14px;border-bottom:1px solid #56577a;white-space:nowrap;user-select:none}
+.table th[data-sort]{cursor:pointer}
+.table th[data-sort]:hover{color:#fff}
+.table th .arr{display:inline-block;margin-left:4px;opacity:.35;font-size:9px}
+.table th.asc .arr,.table th.desc .arr{opacity:1;color:var(--cyan)}
+.table td{padding:16px 12px;border-bottom:1px solid #2d2e5f;font-weight:500;white-space:nowrap}
+.table tbody tr{cursor:pointer;transition:background .15s}
+.table tbody tr:hover{background:rgba(255,255,255,.035)}
+.table tbody tr.new{animation:flash 1.6s ease}
+@keyframes flash{0%{background:rgba(0,117,255,.35)}100%{background:transparent}}
+.table .empty td{text-align:center;color:var(--graygray-400);padding:40px 12px;cursor:default}
+.plate{display:inline-block;padding:3px 8px;border-radius:6px;background:#0d0d0d;border:1px solid #444;font-weight:700;letter-spacing:1px;font-size:13px}
+.pill{display:inline-block;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.pill.in{background:rgba(1,181,116,.15);color:#3ee6a4}
+.pill.out{background:rgba(0,117,255,.18);color:#5fa8ff}
+.conf{display:flex;flex-direction:column;gap:6px;min-width:130px}
+.conf .bar > i{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.conf.low span{color:var(--orange)}
+.conf.low .bar > i{background:var(--orange)}
+
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.toolbar .input{flex:1;min-width:200px;max-width:340px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;font-size:13px;color:var(--graygray-400)}
+.pages{display:flex;gap:6px;flex-wrap:wrap}
+.pages button{min-width:34px;height:34px;padding:0 10px;border-radius:10px;border:0;background:rgba(26,31,55,.7);color:#fff;font:600 13px var(--font)}
+.pages button:hover:not(:disabled){background:#252b4d}
+.pages button.active{background:var(--blue)}
+.pages button:disabled{opacity:.4;cursor:not-allowed}
+.pages .gap{display:inline-flex;align-items:center;padding:0 4px}
+
+/* alerts */
+.alert-list{display:flex;flex-direction:column;gap:10px}
+.alert{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:20px;cursor:pointer;transition:transform .15s,opacity .2s;
+  background:linear-gradient(128deg,rgba(38,6,7,.74) 0%,rgba(55,26,26,.5) 100%)}
+.alert:hover{transform:translateX(2px)}
+.alert.warning{background:linear-gradient(128deg,rgba(45,30,4,.74) 0%,rgba(60,44,18,.5) 100%)}
+.alert.info{background:linear-gradient(128deg,rgba(4,22,48,.8) 0%,rgba(16,36,70,.5) 100%)}
+.alert.read{opacity:.55;background:rgba(26,31,55,.45)}
+.alert-ic{width:34px;height:34px;flex-shrink:0;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,56,60,.2);color:var(--red)}
+.alert.warning .alert-ic{background:rgba(255,181,71,.18);color:var(--orange)}
+.alert.info .alert-ic{background:rgba(0,117,255,.2);color:#5fa8ff}
+.alert-body{flex:1;min-width:0}
+.alert-title{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.alert-title .new-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0}
+.alert-desc{font-size:12.5px;color:var(--graygray-300);margin-top:3px}
+.alert time{display:block;font-size:12px;font-weight:500;color:var(--graygray-400);margin-top:4px}
+.alert-actions{display:flex;gap:4px}
+.alert-actions .icon-btn{width:30px;height:30px}
+.empty-state{text-align:center;padding:36px 12px;color:var(--graygray-400)}
+.empty-state .ic{color:var(--green);margin-bottom:8px}
+
+/* camera */
+.cam{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:16/9;background:#02040f;border:1px solid rgba(255,255,255,.06)}
+.cam-sim{position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.03) 1px,transparent 1px) 0 0/100% 4px,
+    radial-gradient(ellipse at 50% 120%,#1d2a52 0%,#0a1028 55%,#03050f 100%)}
+.cam-sim .road{position:absolute;left:50%;bottom:0;width:70%;height:55%;transform:translateX(-50%) perspective(400px) rotateX(55deg);transform-origin:bottom;
+  background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(255,255,255,.25) 30px 50px) center/6px 100% no-repeat,#151b33}
+.cam-sim .scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(44,217,255,.8),transparent);animation:scan 3.5s linear infinite}
+@keyframes scan{from{top:0}to{top:100%}}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.cam-ov{position:absolute;inset:0;pointer-events:none;padding:16px;display:flex;flex-direction:column;justify-content:space-between;font-size:12px;font-weight:600;text-shadow:0 1px 2px #000}
+.cam-ov .row{display:flex;justify-content:space-between;align-items:center}
+.rec{display:inline-flex;align-items:center;gap:6px;color:#ff6b6e}
+.rec::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--red);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.det-box{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);border:2px solid var(--green);border-radius:6px;padding:6px 12px;
+  background:rgba(0,0,0,.55);font-size:clamp(14px,2.2vw,24px);font-weight:700;letter-spacing:2px;color:#fff;transition:opacity .3s}
+.det-box small{position:absolute;left:-2px;top:-22px;background:var(--green);color:#012;font-size:10px;padding:2px 6px;border-radius:4px 4px 0 0;letter-spacing:0;white-space:nowrap}
+.cam-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.last-det{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+
+/* modal & toast */
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,4,15,.65);backdrop-filter:blur(4px);animation:fade .2s}
+.modal-card{width:100%;max-width:440px;border-radius:20px;padding:26px;background:linear-gradient(128deg,#0b1240 0%,#0a0e23 100%);border:1px solid rgba(255,255,255,.08)}
+.modal-card .plate{font-size:26px;padding:8px 16px;margin:14px 0 18px}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;font-size:13px}
+.kv dt{color:var(--graygray-400)}
+.kv dd{margin:0;font-weight:600}
+.toasts{position:fixed;right:20px;bottom:20px;z-index:120;display:flex;flex-direction:column;gap:10px;max-width:calc(100vw - 40px)}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#0f1640;border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:13px;animation:fade .25s}
+.toast.success .ic{color:var(--green)}
+.toast.error .ic{color:var(--red)}
+.toast.info .ic{color:var(--cyan)}
+.toast.hide{opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+@media (max-width:1400px){
+  .g-2b,.g-2c{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:1200px){
+  .g-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-2a,.g-sec{grid-template-columns:minmax(0,1fr)}
+  .stat-row,.last-det{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:1024px){
+  .sidebar{transform:translateX(calc(-100% - 20px))}
+  body.sb-open .sidebar{transform:none}
+  body.sb-open .sb-backdrop{display:block}
+  .main{margin-left:0;padding:18px 16px}
+  .menu-btn{display:inline-flex}
+}
+@media (max-width:860px){
+  .login{grid-template-columns:1fr}
+  .login-hero{min-height:260px}
+  .hero-copy{padding-top:90px}
+  .tb-right .input{width:100%}
+  .tb-right{width:100%}
+}
+@media (max-width:768px){
+  .welcome{flex-direction:column;min-height:auto;gap:20px;padding:22px}
+  .welcome-content{padding-right:0;max-width:100%}
+  .welcome .w-crodas{max-height:220px}
+}
+@media (max-width:560px){
+  .g-metrics,.stat-row,.last-det{grid-template-columns:minmax(0,1fr)}
+  .card{padding:18px}
+  .welcome .w-crodas{max-height:180px}
+}
+</style>
+</head>
+<body>
+
+<!-- =====================================================
+     LOGIN VIEW
+     ===================================================== -->
+<section id="login-view" class="login" hidden aria-label="Smart Parking Gate sign-in">
+  <div class="login-hero">
+    <span class="orb o1"></span><span class="orb o2"></span>
+    <div class="brand-card">
+      <span class="logo" data-logo></span>
+      <p class="brand-text">SMART PARKING GATE<br>FT UNTIRTA</p>
+    </div>
+  </div>
+  <div class="login-panel">
+    <form id="login-form" class="login-form" novalidate>
+      <div>
+        <h1>Welcome Back</h1>
+        <p class="muted" style="margin-top:6px">Please enter your details</p>
+      </div>
+      <div class="field">
+        <label for="login-email">Email</label>
+        <div class="input"><input id="login-email" type="email" autocomplete="email" placeholder="Your email address" required></div>
+      </div>
+      <div class="field">
+        <label for="login-pass">Password</label>
+        <div class="input">
+          <input id="login-pass" type="password" autocomplete="current-password" placeholder="Your password" required>
+          <button type="button" id="toggle-pass" class="icon-btn" aria-label="Tampilkan password" data-icon="eye"></button>
+        </div>
+      </div>
+      <label class="switch"><input type="checkbox" id="remember"><span class="track"></span><span>Remember me</span></label>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit">SIGN IN</button>
+      <p class="hint">Akun demo: <code>admin@untirta.ac.id</code> / <code>admin123</code></p>
+    </form>
+    <footer>&copy; 2026 Capstone A7</footer>
+  </div>
+</section>
+
+<!-- =====================================================
+     APP SHELL
+     ===================================================== -->
+<div id="app-view" hidden>
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="sb-brand">
+      <span class="logo" data-logo></span>
+      <p class="brand-text">SMART PARKING GATE<br>DASHBOARD FT UNTIRTA</p>
+    </div>
+    <div class="sb-divider"></div>
+    <nav class="nav" aria-label="Dashboard sections">
+      <a href="#/dashboard" data-route="dashboard"><span class="nav-ic" data-icon="home" data-size="15"></span>Dashboard</a>
+      <a href="#/trendline" data-route="trendline"><span class="nav-ic"><img src="img/chart.svg" width="15" height="15" alt="" class="ic" style="vertical-align:middle;object-fit:contain" onerror="this.outerHTML='<svg class=\'ic\' width=\'15\' height=\'15\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M3 3v18h18\'/><path d=\'m7 15 4-4 3 3 5-6\'/></svg>'"></span>Trendline</a>
+      <a href="#/vehicle-log" data-route="vehicle-log"><span class="nav-ic" data-icon="car" data-size="15"></span>Vehicle Log</a>
+      <a href="#/security" data-route="security"><span class="nav-ic" data-icon="shield" data-size="15"></span>Security Notification<span class="badge js-unread" hidden>0</span></a>
+    </nav>
+    <div class="sb-footer">
+      <div class="help-card">
+        <span class="hc-ic" data-icon="camera" data-size="16"></span>
+        <h4>ALPR Gate System</h4>
+        <p>Pemantauan plat nomor kendaraan secara real-time.</p>
+      </div>
+      <div class="user-chip">
+        <span class="avatar js-avatar">F</span>
+        <div><div class="u-name js-username">Fathurrizki</div><div class="u-role">Admin</div></div>
+        <button class="icon-btn" id="logout-btn" title="Logout" aria-label="Logout" data-icon="logout"></button>
+      </div>
+    </div>
+  </aside>
+  <div class="sb-backdrop" id="sb-backdrop"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <button class="icon-btn menu-btn" id="menu-btn" aria-label="Buka menu" data-icon="menu"></button>
+        <div>
+          <div class="crumb">Pages &nbsp;/&nbsp; <b class="js-title">Dashboard</b></div>
+          <h1 class="page-title js-title">Dashboard</h1>
+        </div>
+      </div>
+      <div class="tb-right">
+        <form id="global-search" class="input sm" role="search">
+          <span data-icon="search" data-size="16" class="muted"></span>
+          <input type="search" id="global-q" placeholder="Cari plat / nama..." aria-label="Cari kendaraan">
+        </form>
+        <label class="chip switch" id="live-chip" title="Simulasi data real-time">
+          <span class="live-dot"></span><span>Live</span>
+          <input type="checkbox" id="live-toggle"><span class="track"></span>
+        </label>
+        <span class="chip"><span data-icon="clock" data-size="14"></span><span id="clock">--:--:--</span></span>
+        <a href="#/security" class="icon-btn bell" aria-label="Notifikasi"><span data-icon="bell"></span><span class="badge js-unread" hidden>0</span></a>
+        <span class="chip"><span data-icon="user" data-size="14"></span><span class="js-username-admin">Fathurrizki (Admin)</span></span>
+      </div>
+    </header>
+
+    <!-- ================= DASHBOARD ================= -->
+    <section class="view" data-view="dashboard" hidden>
+      <div class="grid g-metrics">
+        <div class="card metric"><div><div class="m-label">Total Vehicle Today</div><div class="m-val" id="m-total">0</div></div><span class="m-ic" data-icon="car" data-size="22"></span></div>
+        <div class="card metric"><div><div class="m-label">Vehicles In</div><div class="m-val" id="m-in">0</div></div><span class="m-ic" data-icon="arrowIn" data-size="22"></span></div>
+        <div class="card metric"><div><div class="m-label">Vehicles Out</div><div class="m-val" id="m-out">0</div></div><span class="m-ic" data-icon="arrowOut" data-size="22"></span></div>
+        <div class="card metric"><div><div class="m-label">Currently Parked</div><div class="m-val" id="m-parked">0</div></div><span class="m-ic" data-icon="parking" data-size="22"></span></div>
+      </div>
+
+      <div class="grid g-2a">
+        <div class="card welcome">
+          <div class="welcome-content">
+            <div>
+              <div class="w-sub">Welcome back,</div>
+              <h2 class="js-username">Fathurrizki</h2>
+              <p class="w-msg">Glad to see you again!</p>
+              <div class="clock-big" id="clock-big">--:--</div>
+              <div class="muted" id="date-big" style="margin-top:4px;font-size:13px"></div>
+            </div>
+            <div class="w-actions">
+              <a class="btn btn-primary" href="#/vehicle-log"><span data-icon="car" data-size="15"></span>Lihat Vehicle Log</a>
+              <a class="btn btn-ghost" href="#/security"><span data-icon="camera" data-size="15"></span>Real-Time Camera</a>
+            </div>
+          </div>
+          <div class="w-crodas-wrap">
+            <div class="w-crodas-card">
+              <img class="w-crodas" src="img/Crodas-1.png" alt="Maskot Crodas Untirta" onerror="this.onerror=null;this.src='img/crodas-1.png';">
+            </div>
+          </div>
+        </div>
+        <div class="card capacity">
+          <div class="card-head">
+            <div><div class="card-title">Parking Capacity</div><div class="card-sub">Kapasitas area parkir FT Untirta</div></div>
+          </div>
+          <div class="cap-body">
+            <div class="gauge" id="gauge"></div>
+            <div class="cap-stats">
+              <div class="cap-stat"><div class="k">Terisi</div><div class="v" id="cap-occ">0</div></div>
+              <div class="cap-stat"><div class="k">Tersedia</div><div class="v" id="cap-free">0</div></div>
+              <div class="cap-stat"><div class="k">Total Slot</div><div class="v" id="cap-total">0</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid g-2b">
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">Trendline</div><div class="card-sub">Kendaraan per jam hari ini</div></div>
+            <div class="legend"><span><i class="dot" style="background:#2cd9ff"></i>Vehicles In</span><span><i class="dot" style="background:#0075ff"></i>Vehicles Out</span></div>
+          </div>
+          <div class="chart" id="dash-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Vehicle Statistics</div><div class="card-sub">Kendaraan masuk per kategori (hari ini)</div></div></div>
+          <div class="cat-list" id="cat-list"></div>
+        </div>
+      </div>
+
+      <div class="grid g-2c">
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">Vehicle Log</div><div class="card-sub"><img src="img/circle.svg" width="15" height="15" alt="" class="ic" style="vertical-align:middle" onerror="this.outerHTML='<span data-icon=\'checkCircle\' data-size=\'15\' class=\'up\'></span>'"><span>Total <b id="dash-total">0</b> Vehicle Today</span></div></div>
+            <a href="#/vehicle-log" class="btn btn-ghost">Lihat semua</a>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>NO</th><th>TIME</th><th>NAME</th><th>LICENSE PLATE</th><th>CATEGORY</th><th>IN/OUT</th><th>CONFIDENCE</th></tr></thead>
+              <tbody id="dash-log"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">Security Notification</div><div class="card-sub js-alert-sub"></div></div>
+          </div>
+          <div class="alert-list" id="dash-alerts"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TRENDLINE ================= -->
+    <section class="view" data-view="trendline" hidden>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Trendline</div>
+            <div class="card-sub" id="trend-sub">Arus kendaraan</div>
+          </div>
+          <div class="seg" role="group" aria-label="Trendline time range">
+            <button type="button" data-range="1h">1 Hour</button>
+            <button type="button" data-range="1d">1 Day</button>
+            <button type="button" data-range="1m">1 Month</button>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="k">Total Masuk</div><div class="v up" id="t-in">0</div><div class="s">kendaraan IN</div></div>
+          <div class="stat-box"><div class="k">Total Keluar</div><div class="v" style="color:#5fa8ff" id="t-out">0</div><div class="s">kendaraan OUT</div></div>
+          <div class="stat-box"><div class="k">Puncak</div><div class="v" id="t-peak">0</div><div class="s" id="t-peak-at">-</div></div>
+          <div class="stat-box"><div class="k">Rata-rata</div><div class="v" id="t-avg">0</div><div class="s" id="t-avg-unit">per interval</div></div>
+        </div>
+        <div class="legend" style="margin-bottom:10px"><span><i class="dot" style="background:#2cd9ff"></i>Vehicles In</span><span><i class="dot" style="background:#0075ff"></i>Vehicles Out</span></div>
+        <div class="chart" id="trend-chart"></div>
+      </div>
+    </section>
+
+    <!-- ================= VEHICLE LOG ================= -->
+    <section class="view" data-view="vehicle-log" hidden>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Vehicle Log</div>
+            <div class="card-sub"><img src="img/circle.svg" width="15" height="15" alt="" class="ic" style="vertical-align:middle" onerror="this.outerHTML='<span data-icon=\'checkCircle\' data-size=\'15\' class=\'up\'></span>'"><span>Total <b id="vl-today">0</b> Vehicle Today</span></div>
+          </div>
+          <button type="button" class="btn btn-green" id="export-csv"><img src="img/CSV-element-1.png" width="20" height="20" alt="" style="vertical-align:middle;object-fit:contain" onerror="this.style.display='none'"><span>Export CSV</span></button>
+        </div>
+        <div class="toolbar">
+          <div class="input sm"><span data-icon="search" data-size="16" class="muted"></span><input type="search" id="vl-q" placeholder="Cari nama atau plat nomor..." aria-label="Cari"></div>
+          <select class="select" id="vl-cat" aria-label="Filter kategori">
+            <option value="ALL">Semua Kategori</option>
+            <option value="STUDENT">Student</option>
+            <option value="LECTURER">Lecturer</option>
+            <option value="ACADEMIC COMMUNITY">Academic Community</option>
+            <option value="GUEST">Guest</option>
+          </select>
+          <select class="select" id="vl-dir" aria-label="Filter arah">
+            <option value="ALL">IN &amp; OUT</option>
+            <option value="IN">IN saja</option>
+            <option value="OUT">OUT saja</option>
+          </select>
+          <select class="select" id="vl-per" aria-label="Baris per halaman">
+            <option value="10">10 / halaman</option>
+            <option value="25">25 / halaman</option>
+            <option value="50">50 / halaman</option>
+          </select>
+          <button type="button" class="btn btn-ghost" id="vl-reset">Reset</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="vl-table">
+            <thead><tr>
+              <th data-sort="no">NO<span class="arr">&#9660;</span></th>
+              <th data-sort="time">TIME<span class="arr">&#9660;</span></th>
+              <th data-sort="name">NAME<span class="arr">&#9660;</span></th>
+              <th data-sort="plate">LICENSE PLATE<span class="arr">&#9660;</span></th>
+              <th data-sort="category">CATEGORY<span class="arr">&#9660;</span></th>
+              <th data-sort="dir">IN/OUT<span class="arr">&#9660;</span></th>
+              <th data-sort="conf">CONFIDENCE<span class="arr">&#9660;</span></th>
+            </tr></thead>
+            <tbody id="vl-body"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <span id="vl-info">-</span>
+          <div class="pages" id="vl-pages"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SECURITY ================= -->
+    <section class="view" data-view="security" hidden>
+      <div class="grid g-sec">
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">Security Notification</div><div class="card-sub js-alert-sub"></div></div>
+          </div>
+          <div class="toolbar" style="justify-content:space-between">
+            <div class="seg" role="group" aria-label="Filter notifikasi">
+              <button type="button" data-afilter="all">Semua</button>
+              <button type="button" data-afilter="unread">Belum dibaca</button>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn btn-ghost" id="mark-all">Tandai dibaca</button>
+              <button type="button" class="btn btn-danger" id="clear-read">Hapus</button>
+            </div>
+          </div>
+          <div class="alert-list" id="sec-alerts"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">Real-Time Camera</div><div class="card-sub">CAM-01 &bull; Gerbang Masuk FT Untirta</div></div>
+            <span class="chip" id="cam-status"><span class="live-dot" style="background:var(--green)"></span>Simulasi</span>
+          </div>
+          <div class="cam">
+            <div class="cam-sim"><div class="road"></div><div class="scan"></div></div>
+            <video id="cam-video" playsinline muted hidden></video>
+            <div class="cam-ov">
+              <div class="row"><span class="rec">REC</span><span id="cam-time">--</span></div>
+              <div class="row"><span>CAM-01 &bull; GATE ENTRY</span><span>ALPR v1.0</span></div>
+            </div>
+            <div class="det-box" id="det-box"><small id="det-label">IN &bull; 98%</small><span id="det-plate">-</span></div>
+          </div>
+          <div class="cam-actions">
+            <button type="button" class="btn btn-primary" id="cam-start"><span data-icon="camera" data-size="15"></span>Gunakan Webcam</button>
+            <button type="button" class="btn btn-ghost" id="cam-stop" disabled><span data-icon="x" data-size="15"></span>Hentikan Webcam</button>
+            <button type="button" class="btn btn-ghost" id="cam-snap"><span data-icon="download" data-size="15"></span>Snapshot</button>
+          </div>
+          <div class="last-det">
+            <div class="stat-box"><div class="k">Plat Terakhir</div><div class="v" id="ld-plate">-</div></div>
+            <div class="stat-box"><div class="k">Pemilik</div><div class="v" style="font-size:15px" id="ld-name">-</div></div>
+            <div class="stat-box"><div class="k">Arah</div><div class="v" id="ld-dir">-</div></div>
+            <div class="stat-box"><div class="k">Waktu</div><div class="v" id="ld-time">-</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-footer">&copy; 2026 Capstone A7</footer>
+  </div>
+</div>
+
+<!-- Modal detail kendaraan -->
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 id="modal-title" class="card-title">Detail Kendaraan</h3>
+      <button class="icon-btn" id="modal-close" aria-label="Tutup" data-icon="x"></button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     UTILITIES
+     ========================================================= */
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ESC_MAP[c]; }); }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  var DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  var MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  function fmtHM(d) { return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function fmtHMS(d) { return fmtHM(d) + ':' + pad2(d.getSeconds()); }
+  function fmtDateTime(d) {
+    var h = d.getHours(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + h + ':' + pad2(d.getMinutes()) + ' ' + ap;
+  }
+  function fmtLongDate(d) { return DAYS_ID[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS_ID[d.getMonth()] + ' ' + d.getFullYear(); }
+  function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function isToday(d) { return startOfDay(d).getTime() === startOfDay(new Date()).getTime(); }
+  function fmtNum(v) {
+    if (v >= 1000) return (Math.round(v / 100) / 10) + 'k';
+    return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  }
+  function titleCase(s) { return s.toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+  function debounce(fn, ms) { var t; return function () { var a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(null, a); }, ms); }; }
+
+  // Seeded PRNG agar data dummy konsisten dalam satu hari
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var today0 = startOfDay(new Date());
+  var SEED = today0.getFullYear() * 10000 + (today0.getMonth() + 1) * 100 + today0.getDate();
+  var rnd = mulberry32(SEED);
+  function pick(arr, r) { return arr[Math.floor((r || rnd)() * arr.length)]; }
+
+  /* =========================================================
+     ICONS (inline SVG, tanpa file eksternal)
+     ========================================================= */
+  var ICONS = {
+    home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    chart: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
+    car: '<path d="M3 13l2-5a2 2 0 0 1 1.9-1.4h10.2A2 2 0 0 1 19 8l2 5v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h18"/><circle cx="7.5" cy="15.5" r=".8"/><circle cx="16.5" cy="15.5" r=".8"/>',
+    shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="M12 8v5M12 16h.01"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+    menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+    download: '<path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    check: '<path d="m5 12 5 5L20 7"/>',
+    checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    camera: '<path d="m22 8-6 4 6 4z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+    arrowIn: '<path d="M12 4v14m0 0-6-6m6 6 6-6"/><path d="M5 21h14"/>',
+    arrowOut: '<path d="M12 18V4m0 0L6 10m6-6 6 6"/><path d="M5 21h14"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    parking: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.8M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
+  };
+  function icon(name, size) {
+    size = size || 18;
+    return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+  }
+  function hydrateIcons(root) {
+    $$('[data-icon]', root).forEach(function (el) { el.innerHTML = icon(el.dataset.icon, Number(el.dataset.size) || 18); });
+  }
+  // Logo: coba gunakan img/LOGO-UNTIRTA-1.png, fallback ke SVG bila file tidak ada
+  var LOGO_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd54a"/><stop offset="1" stop-color="#f29d0c"/></linearGradient></defs><path d="M32 3 56 12v20c0 14-10 24-24 29C18 56 8 46 8 32V12z" fill="#0b2a8c" stroke="url(#lg1)" stroke-width="3"/><path d="M20 40h24M22 40V27l10-7 10 7v13" fill="none" stroke="url(#lg1)" stroke-width="3" stroke-linejoin="round"/><circle cx="32" cy="31" r="3.5" fill="#ffd54a"/></svg>';
+  function hydrateLogos() {
+    $$('[data-logo]').forEach(function (el) {
+      el.innerHTML = LOGO_SVG;
+      var img = new Image();
+      img.alt = 'Logo Untirta';
+      img.onload = function () { el.innerHTML = ''; el.appendChild(img); };
+      img.src = 'img/LOGO-UNTIRTA-1.png';
+    });
+  }
+
+  /* =========================================================
+     DATA (simulasi output sistem ALPR)
+     ========================================================= */
+  var CAPACITY = 100, OVERNIGHT = 35;
+  var CATEGORIES = ['STUDENT', 'LECTURER', 'ACADEMIC COMMUNITY', 'GUEST'];
+  var CAT_COLORS = { 'STUDENT': '#0075ff', 'LECTURER': '#2cd9ff', 'ACADEMIC COMMUNITY': '#01b574', 'GUEST': '#ffb547' };
+  var FIRST = ['Ahmad', 'Budi', 'Citra', 'Dewi', 'Eka', 'Fajar', 'Gilang', 'Hana', 'Indra', 'Joko', 'Kartika', 'Lina', 'Muhammad', 'Nanda', 'Oktavia', 'Putri', 'Rizky', 'Salsa', 'Taufik', 'Umar', 'Vina', 'Wahyu', 'Yoga', 'Zahra', 'Andi', 'Bayu', 'Dimas', 'Farhan', 'Intan', 'Raka'];
+  var LASTN = ['Pratama', 'Saputra', 'Lestari', 'Wijaya', 'Hidayat', 'Nugraha', 'Permata', 'Ramadhan', 'Kusuma', 'Santoso', 'Maulana', 'Fitriani', 'Hakim', 'Siregar', 'Utami'];
+  var REGIONS = ['A', 'A', 'A', 'B', 'B', 'F', 'D', 'T'];
+  var LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ';
+
+  function weightedCat(r) {
+    var x = r();
+    return x < 0.55 ? 'STUDENT' : x < 0.75 ? 'LECTURER' : x < 0.9 ? 'ACADEMIC COMMUNITY' : 'GUEST';
+  }
+  function makePlate(r) {
+    var len = 1 + Math.floor(r() * 3), suf = '';
+    for (var i = 0; i < len; i++) suf += LETTERS[Math.floor(r() * LETTERS.length)];
+    return pick(REGIONS, r) + ' ' + (1000 + Math.floor(r() * 9000)) + ' ' + suf;
+  }
+
+  var people = [
+    { name: 'Elkan Baggot', plate: 'B 3782 NHF', category: 'STUDENT' },
+    { name: 'Shabrina Zahra', plate: 'B 1234 VZN', category: 'STUDENT' },
+    { name: 'Rocky Alfanz', plate: 'B 3501 NZN', category: 'LECTURER' },
+    { name: 'Bundo', plate: 'A 9816 XY', category: 'ACADEMIC COMMUNITY' },
+    { name: 'Sohari', plate: 'A 2145 JZ', category: 'ACADEMIC COMMUNITY' }
+  ];
+  var usedPlates = {};
+  people.forEach(function (p) { p.inside = false; usedPlates[p.plate] = true; });
+  while (people.length < 90) {
+    var pl;
+    do { pl = makePlate(rnd); } while (usedPlates[pl]);
+    usedPlates[pl] = true;
+    people.push({ name: pick(FIRST) + ' ' + pick(LASTN), plate: pl, category: weightedCat(rnd), inside: false });
+  }
+
+  var seq = 0;
+  function choosePerson(r) {
+    var inside = people.filter(function (p) { return p.inside; });
+    var outside = people.filter(function (p) { return !p.inside; });
+    var wantOut;
+    if (!inside.length) wantOut = false;
+    else if (!outside.length || inside.length + OVERNIGHT >= CAPACITY) wantOut = true;
+    else wantOut = r() < 0.42;
+    var pool = wantOut ? inside : outside;
+    return pool[Math.floor(r() * pool.length)];
+  }
+  function makeLog(person, ts, r) {
+    var dir = person.inside ? 'OUT' : 'IN';
+    person.inside = !person.inside;
+    var conf = r() < 0.05 ? 70 + Math.floor(r() * 10) : 85 + Math.floor(r() * 15);
+    return { id: ++seq, ts: ts, name: person.name, plate: person.plate, category: person.category, dir: dir, conf: conf };
+  }
+
+  var state = {
+    logs: [],               // terbaru di index 0
+    alerts: [],
+    range: '1d',
+    page: 1,
+    perPage: 10,
+    sort: { key: 'time', dir: 'desc' },
+    filters: { q: '', cat: 'ALL', dir: 'ALL' },
+    alertFilter: 'all',
+    route: null,
+    newIds: {},
+    occAlerted: false
+  };
+
+  (function seedLogs() {
+    var now = new Date();
+    var six = new Date(today0.getTime() + 6 * 3600e3);
+    var start = now.getTime() - six.getTime() > 3600e3 ? six : today0;
+    var span = Math.max(60e3, now.getTime() - start.getTime());
+    var times = [];
+    for (var i = 0; i < 126; i++) times.push(start.getTime() + rnd() * span);
+    times.sort(function (a, b) { return a - b; });
+    var arr = times.map(function (t) { return makeLog(choosePerson(rnd), new Date(t), rnd); });
+    state.logs = arr.reverse();
+  })();
+
+  var alertSeq = 0;
+  function addAlert(type, title, desc, ts, read) {
+    var a = { id: ++alertSeq, type: type, title: title, desc: desc, ts: ts || new Date(), read: !!read };
+    state.alerts.unshift(a);
+    return a;
+  }
+  addAlert('danger', 'Camera offline', 'Kamera CAM-02 (gerbang keluar) kehilangan koneksi selama 4 menit.', new Date(Date.now() - 20 * 3600e3));
+  addAlert('warning', 'Vehicles parked for more than 24 hours', '3 kendaraan telah melewati batas parkir 24 jam.', new Date(Date.now() - 90 * 60e3));
+
+  function occupancy() {
+    var inside = 0;
+    for (var i = 0; i < people.length; i++) if (people[i].inside) inside++;
+    return Math.min(CAPACITY, inside + OVERNIGHT);
+  }
+  function todayLogs() { return state.logs.filter(function (l) { return isToday(l.ts); }); }
+  function unreadCount() { return state.alerts.filter(function (a) { return !a.read; }).length; }
+
+  /* =========================================================
+     AUTH
+     ========================================================= */
+  var AUTH_KEY = 'spg_auth';
+  var DEMO = { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki' };
+  function safeGet(store) { try { return store.getItem(AUTH_KEY); } catch (e) { return null; } }
+  function getAuth() {
+    var raw = safeGet(window.localStorage) || safeGet(window.sessionStorage);
+    if (!raw) return null;
+    try { var o = JSON.parse(raw); return o && o.email ? o : null; } catch (e) { return null; }
+  }
+  function setAuth(obj, remember) {
+    var s = JSON.stringify(obj);
+    try {
+      (remember ? localStorage : sessionStorage).setItem(AUTH_KEY, s);
+    } catch (e) { memAuth = obj; }
+  }
+  var memAuth = null; // fallback bila storage diblokir browser
+  function clearAuth() {
+    memAuth = null;
+    try { localStorage.removeItem(AUTH_KEY); } catch (e) { }
+    try { sessionStorage.removeItem(AUTH_KEY); } catch (e) { }
+  }
+  function currentUser() { return getAuth() || memAuth; }
+
+  /* =========================================================
+     TOAST & MODAL
+     ========================================================= */
+  function toast(msg, type) {
+    type = type || 'info';
+    var ic = type === 'success' ? 'checkCircle' : type === 'error' ? 'alert' : 'info';
+    var el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = icon(ic, 18) + '<span>' + esc(msg) + '</span>';
+    $('#toasts').appendChild(el);
+    setTimeout(function () { el.classList.add('hide'); }, 3200);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3600);
+  }
+  var lastFocus = null;
+  function openModal(html) {
+    lastFocus = document.activeElement;
+    $('#modal-body').innerHTML = html;
+    $('#modal').hidden = false;
+    $('#modal-close').focus();
+  }
+  function closeModal() {
+    if ($('#modal').hidden) return;
+    $('#modal').hidden = true;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  function openLogModal(id) {
+    var l = null;
+    for (var i = 0; i < state.logs.length; i++) if (state.logs[i].id === id) { l = state.logs[i]; break; }
+    if (!l) return;
+    var person = people.filter(function (p) { return p.plate === l.plate; })[0];
+    var history = state.logs.filter(function (x) { return x.plate === l.plate; }).length;
+    openModal(
+      '<div class="plate">' + esc(l.plate) + '</div>' +
+      '<dl class="kv">' +
+      '<dt>Nama</dt><dd>' + esc(l.name) + '</dd>' +
+      '<dt>Kategori</dt><dd>' + esc(titleCase(l.category)) + '</dd>' +
+      '<dt>Waktu</dt><dd>' + esc(fmtLongDate(l.ts)) + ' &bull; ' + fmtHMS(l.ts) + ' WIB</dd>' +
+      '<dt>Arah</dt><dd><span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span></dd>' +
+      '<dt>Confidence</dt><dd>' + l.conf + '%' + (l.conf < 80 ? ' <span style="color:var(--orange)">(perlu verifikasi)</span>' : '') + '</dd>' +
+      '<dt>Status saat ini</dt><dd>' + (person && person.inside ? '<span class="up">Di dalam area parkir</span>' : '<span class="muted">Di luar area parkir</span>') + '</dd>' +
+      '<dt>Total aktivitas</dt><dd>' + history + ' tercatat</dd>' +
+      '</dl>'
+    );
+  }
+
+  /* =========================================================
+     CHART (SVG line chart dengan tooltip)
+     ========================================================= */
+  var charts = {};
+  var gradSeq = 0;
+  function niceMax(m) {
+    var pow = Math.pow(10, Math.floor(Math.log10(m)));
+    var steps = [1, 2, 4, 5, 8, 10];
+    for (var i = 0; i < steps.length; i++) if (steps[i] * pow >= m) return steps[i] * pow;
+    return 10 * pow;
+  }
+  function drawChart(el, opts) {
+    charts[el.id] = opts;
+    var labels = opts.labels, series = opts.series, tips = opts.tips || labels;
+    var W = Math.max(el.clientWidth || 0, 300), H = opts.height || 300;
+    var P = { l: 42, r: 14, t: 14, b: 30 };
+    var iw = W - P.l - P.r, ih = H - P.t - P.b, n = labels.length;
+    var vals = [];
+    series.forEach(function (s) { s.data.forEach(function (v) { if (v != null) vals.push(v); }); });
+    var max = niceMax(Math.max.apply(null, [4].concat(vals)));
+    function X(i) { return P.l + (n <= 1 ? iw / 2 : i * iw / (n - 1)); }
+    function Y(v) { return P.t + ih - (v / max) * ih; }
+
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Grafik arus kendaraan"><defs>';
+    var ids = series.map(function () { return 'cg' + (++gradSeq); });
+    series.forEach(function (s, k) {
+      svg += '<linearGradient id="' + ids[k] + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + s.color + '" stop-opacity=".45"/><stop offset="1" stop-color="' + s.color + '" stop-opacity="0"/></linearGradient>';
+    });
+    svg += '</defs>';
+    for (var k = 0; k <= 4; k++) {
+      var v = max * k / 4, y = Y(v);
+      svg += '<line class="grid-l" x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + y + '" y2="' + y + '"/>';
+      svg += '<text class="axis" x="' + (P.l - 8) + '" y="' + (y + 3) + '" text-anchor="end">' + fmtNum(v) + '</text>';
+    }
+    var step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(iw / 58))));
+    labels.forEach(function (lb, i) {
+      if (i % step !== 0) return;
+      svg += '<text class="axis" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(lb) + '</text>';
+    });
+    series.forEach(function (s, k) {
+      var pts = [];
+      s.data.forEach(function (v, i) { if (v != null) pts.push([X(i), Y(v)]); });
+      if (!pts.length) return;
+      var d = 'M' + pts[0][0] + ',' + pts[0][1];
+      for (var i = 1; i < pts.length; i++) {
+        var cx = (pts[i - 1][0] + pts[i][0]) / 2;
+        d += ' C' + cx + ',' + pts[i - 1][1] + ' ' + cx + ',' + pts[i][1] + ' ' + pts[i][0] + ',' + pts[i][1];
+      }
+      var base = P.t + ih;
+      svg += '<path d="' + d + ' L' + pts[pts.length - 1][0] + ',' + base + ' L' + pts[0][0] + ',' + base + ' Z" fill="url(#' + ids[k] + ')"/>';
+      svg += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2.5" stroke-linecap="round"/>';
+    });
+    svg += '<line class="hover-line" x1="0" x2="0" y1="' + P.t + '" y2="' + (P.t + ih) + '" visibility="hidden"/>';
+    series.forEach(function (s, k) { svg += '<circle class="hv-dot" data-k="' + k + '" r="4.5" fill="' + s.color + '" stroke="#fff" stroke-width="2" visibility="hidden"/>'; });
+    svg += '<rect class="hit" x="' + P.l + '" y="' + P.t + '" width="' + iw + '" height="' + ih + '" fill="transparent"/></svg>';
+    el.innerHTML = svg + '<div class="chart-tip"></div>';
+
+    var svgEl = el.querySelector('svg'), tip = el.querySelector('.chart-tip'), vline = el.querySelector('.hover-line');
+    var dots = $$('.hv-dot', el);
+    function hide() {
+      tip.classList.remove('show');
+      vline.setAttribute('visibility', 'hidden');
+      dots.forEach(function (d) { d.setAttribute('visibility', 'hidden'); });
+    }
+    function move(e) {
+      var rect = svgEl.getBoundingClientRect();
+      if (!rect.width) return;
+      var scale = W / rect.width;
+      var mx = (e.clientX - rect.left) * scale;
+      var idx = n <= 1 ? 0 : Math.round((mx - P.l) / (iw / (n - 1)));
+      idx = Math.max(0, Math.min(n - 1, idx));
+      var hasVal = series.some(function (s) { return s.data[idx] != null; });
+      if (!hasVal) { hide(); return; }
+      var x = X(idx);
+      vline.setAttribute('x1', x); vline.setAttribute('x2', x); vline.setAttribute('visibility', 'visible');
+      var rows = '';
+      series.forEach(function (s, k) {
+        var v = s.data[idx];
+        if (v == null) { dots[k].setAttribute('visibility', 'hidden'); return; }
+        dots[k].setAttribute('cx', x); dots[k].setAttribute('cy', Y(v)); dots[k].setAttribute('visibility', 'visible');
+        rows += '<div class="t-r"><i class="dot" style="background:' + s.color + '"></i>' + esc(s.name) + '<b>' + v + '</b></div>';
+      });
+      tip.innerHTML = '<div class="t-h">' + esc(tips[idx]) + '</div>' + rows;
+      var px = x / scale;
+      var tw = tip.offsetWidth || 140;
+      var left = px + 14;
+      if (left + tw > rect.width) left = px - tw - 14;
+      tip.style.left = Math.max(0, left) + 'px';
+      tip.style.top = '10px';
+      tip.classList.add('show');
+    }
+    svgEl.addEventListener('pointermove', move);
+    svgEl.addEventListener('pointerdown', move);
+    svgEl.addEventListener('pointerleave', hide);
+  }
+  function redrawCharts() {
+    Object.keys(charts).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.offsetParent !== null) drawChart(el, charts[id]);
+    });
+  }
+
+  function trendData(range) {
+    var now = new Date(), labels = [], tips = [], inD = [], outD = [], i;
+    if (range === '1h') {
+      var startT = now.getTime() - 60 * 60e3;
+      for (i = 0; i < 12; i++) {
+        var b0 = new Date(startT + i * 5 * 60e3), b1 = new Date(b0.getTime() + 5 * 60e3);
+        labels.push(fmtHM(b0)); tips.push(fmtHM(b0) + ' – ' + fmtHM(b1));
+        inD.push(0); outD.push(0);
+      }
+      state.logs.forEach(function (l) {
+        var t = l.ts.getTime();
+        if (t < startT || t > now.getTime()) return;
+        var idx = Math.min(11, Math.floor((t - startT) / (5 * 60e3)));
+        if (l.dir === 'IN') inD[idx]++; else outD[idx]++;
+      });
+      return { labels: labels, tips: tips, inD: inD, outD: outD, unit: 'per 5 menit', sub: '60 menit terakhir (interval 5 menit)' };
+    }
+    if (range === '1m') {
+      var r2 = mulberry32(SEED + 7);
+      for (i = 29; i >= 0; i--) {
+        var d = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() - i);
+        labels.push(d.getDate() + ' ' + MONTHS[d.getMonth()]);
+        tips.push(fmtLongDate(d));
+        if (i === 0) {
+          var tl = todayLogs();
+          inD.push(tl.filter(function (l) { return l.dir === 'IN'; }).length);
+          outD.push(tl.filter(function (l) { return l.dir === 'OUT'; }).length);
+        } else {
+          var wk = d.getDay() === 0 || d.getDay() === 6;
+          var vin = wk ? 15 + Math.floor(r2() * 25) : 70 + Math.floor(r2() * 45);
+          inD.push(vin);
+          outD.push(Math.max(0, vin - 4 + Math.floor(r2() * 8)));
+        }
+      }
+      return { labels: labels, tips: tips, inD: inD, outD: outD, unit: 'per hari', sub: '30 hari terakhir' };
+    }
+    // 1 day: per jam hari ini
+    var curH = now.getHours();
+    for (i = 0; i < 24; i++) {
+      labels.push(pad2(i) + ':00'); tips.push(pad2(i) + ':00 – ' + pad2(i) + ':59');
+      inD.push(i <= curH ? 0 : null); outD.push(i <= curH ? 0 : null);
+    }
+    todayLogs().forEach(function (l) {
+      var h = l.ts.getHours();
+      if (inD[h] == null) return;
+      if (l.dir === 'IN') inD[h]++; else outD[h]++;
+    });
+    return { labels: labels, tips: tips, inD: inD, outD: outD, unit: 'per jam', sub: 'Hari ini, ' + fmtLongDate(now) + ' (per jam)' };
+  }
+  function seriesOf(td) {
+    return [
+      { name: 'Vehicles In', color: '#2cd9ff', data: td.inD },
+      { name: 'Vehicles Out', color: '#0075ff', data: td.outD }
+    ];
+  }
+
+  /* =========================================================
+     RENDER: shared pieces
+     ========================================================= */
+  function logRowHTML(l, no) {
+    var low = l.conf < 80;
+    return '<tr data-id="' + l.id + '"' + (state.newIds[l.id] ? ' class="new"' : '') + '>' +
+      '<td>' + no + '</td>' +
+      '<td>' + fmtHM(l.ts) + ' WIB</td>' +
+      '<td>' + esc(l.name) + '</td>' +
+      '<td><span class="plate">' + esc(l.plate) + '</span></td>' +
+      '<td>' + esc(l.category) + '</td>' +
+      '<td><span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span></td>' +
+      '<td><div class="conf' + (low ? ' low' : '') + '"><span>' + l.conf + '%</span><div class="bar"><i style="width:' + l.conf + '%"></i></div></div></td>' +
+      '</tr>';
+  }
+  function alertHTML(a, compact) {
+    var ic = a.type === 'danger' ? 'alert' : a.type === 'warning' ? 'alert' : 'info';
+    var html = '<div class="alert ' + a.type + (a.read ? ' read' : '') + '" data-id="' + a.id + '" tabindex="0">' +
+      '<span class="alert-ic">' + icon(ic, 17) + '</span>' +
+      '<div class="alert-body"><div class="alert-title">' + (a.read ? '' : '<span class="new-dot"></span>') + esc(a.title) + '</div>' +
+      (compact ? '' : '<div class="alert-desc">' + esc(a.desc) + '</div>') +
+      '<time>' + fmtDateTime(a.ts) + '</time></div>';
+    if (!compact) {
+      html += '<div class="alert-actions">' +
+        (a.read ? '' : '<button type="button" class="icon-btn" data-act="read" title="Tandai dibaca" aria-label="Tandai dibaca">' + icon('check', 16) + '</button>') +
+        '<button type="button" class="icon-btn" data-act="dismiss" title="Hapus" aria-label="Hapus notifikasi">' + icon('x', 16) + '</button></div>';
+    }
+    return html + '</div>';
+  }
+  function updateBadges() {
+    var u = unreadCount();
+    $$('.js-unread').forEach(function (b) { b.textContent = u > 99 ? '99+' : u; b.hidden = u === 0; });
+    $$('.js-alert-sub').forEach(function (el) {
+      el.className = 'card-sub js-alert-sub ' + (u ? 'red' : 'green');
+      var alertIcon = '<img src="img/Element-2-5.png" width="14" height="12" alt="" style="vertical-align:middle;object-fit:contain;margin-right:4px" onerror="this.style.display=\'none\'">';
+      el.innerHTML = u ? (alertIcon + '<span>' + u + ' Security Alert' + (u > 1 ? 's' : '') + '</span>')
+                       : (icon('checkCircle', 15) + '<span>Tidak ada peringatan aktif</span>');
+    });
+  }
+  function emptyAlerts() {
+    return '<div class="empty-state">' + icon('checkCircle', 30) + '<div>Semua aman. Tidak ada notifikasi.</div></div>';
+  }
+
+  /* =========================================================
+     RENDER: views
+     ========================================================= */
+  function renderDashboard() {
+    var tl = todayLogs();
+    var nIn = tl.filter(function (l) { return l.dir === 'IN'; }).length;
+    var occ = occupancy();
+    $('#m-total').textContent = tl.length;
+    $('#m-in').innerHTML = nIn + ' <small class="up">' + (tl.length ? Math.round(nIn / tl.length * 100) : 0) + '%</small>';
+    $('#m-out').innerHTML = (tl.length - nIn) + ' <small style="color:#5fa8ff">' + (tl.length ? Math.round((tl.length - nIn) / tl.length * 100) : 0) + '%</small>';
+    $('#m-parked').innerHTML = occ + ' <small class="' + (occ / CAPACITY >= 0.9 ? 'down' : 'up') + '">/ ' + CAPACITY + '</small>';
+    $('#dash-total').textContent = tl.length;
+
+    // gauge
+    var pct = Math.round(occ / CAPACITY * 100), r = 80, c = 2 * Math.PI * r;
+    var col = pct >= 90 ? ['#ff383c', '#ff8a8c'] : pct >= 75 ? ['#ffb547', '#ffd88a'] : ['#0075ff', '#2cd9ff'];
+    $('#gauge').innerHTML =
+      '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + col[0] + '"/><stop offset="1" stop-color="' + col[1] + '"/></linearGradient></defs>' +
+      '<circle class="g-track" cx="100" cy="100" r="' + r + '"/>' +
+      '<circle class="g-val" cx="100" cy="100" r="' + r + '" stroke="url(#gaugeGrad)" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + (c * (1 - pct / 100)).toFixed(2) + '" transform="rotate(-90 100 100)"/></svg>' +
+      '<div class="g-center"><div class="g-pct">' + pct + '%</div><div class="g-sub">terisi</div></div>';
+    $('#cap-occ').textContent = occ;
+    $('#cap-free').textContent = CAPACITY - occ;
+    $('#cap-total').textContent = CAPACITY;
+
+    // trend
+    var td = trendData('1d');
+    drawChart($('#dash-chart'), { labels: td.labels, tips: td.tips, series: seriesOf(td), height: 280 });
+
+    // categories
+    var ins = tl.filter(function (l) { return l.dir === 'IN'; });
+    $('#cat-list').innerHTML = CATEGORIES.map(function (cat) {
+      var n = ins.filter(function (l) { return l.category === cat; }).length;
+      var p = ins.length ? Math.round(n / ins.length * 100) : 0;
+      return '<div class="cat-item"><div class="ci-top"><span>' + esc(titleCase(cat)) + '</span><span>' + n + ' &bull; ' + p + '%</span></div>' +
+        '<div class="bar"><i style="width:' + p + '%;background:' + CAT_COLORS[cat] + '"></i></div></div>';
+    }).join('') +
+      '<div class="cap-stat" style="margin-top:6px"><div class="k">Rata-rata confidence ALPR hari ini</div><div class="v">' +
+      (tl.length ? (tl.reduce(function (s, l) { return s + l.conf; }, 0) / tl.length).toFixed(1) : '0') + '%</div></div>';
+
+    // recent log
+    var recent = state.logs.slice(0, 6);
+    $('#dash-log').innerHTML = recent.length ? recent.map(function (l, i) { return logRowHTML(l, i + 1); }).join('')
+      : '<tr class="empty"><td colspan="7">Belum ada data kendaraan.</td></tr>';
+
+    // alerts
+    var al = state.alerts.slice(0, 4);
+    $('#dash-alerts').innerHTML = al.length ? al.map(function (a) { return alertHTML(a, true); }).join('') : emptyAlerts();
+    updateClockDisplays();
+  }
+
+  function renderTrendline() {
+    $$('[data-range]').forEach(function (b) {
+      var on = b.dataset.range === state.range;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var td = trendData(state.range);
+    var sum = function (a) { return a.reduce(function (s, v) { return s + (v || 0); }, 0); };
+    var tIn = sum(td.inD), tOut = sum(td.outD);
+    var peak = -1, peakAt = '-', count = 0;
+    td.inD.forEach(function (v, i) {
+      if (v == null) return;
+      count++;
+      var tot = v + (td.outD[i] || 0);
+      if (tot > peak) { peak = tot; peakAt = td.tips[i]; }
+    });
+    $('#trend-sub').textContent = td.sub;
+    $('#t-in').textContent = tIn;
+    $('#t-out').textContent = tOut;
+    $('#t-peak').textContent = Math.max(0, peak);
+    $('#t-peak-at').textContent = peak > 0 ? peakAt : '-';
+    $('#t-avg').textContent = count ? ((tIn + tOut) / count).toFixed(1) : '0';
+    $('#t-avg-unit').textContent = 'kendaraan ' + td.unit;
+    drawChart($('#trend-chart'), { labels: td.labels, tips: td.tips, series: seriesOf(td), height: Math.max(320, Math.min(560, window.innerHeight - 380)) });
+  }
+
+  function filteredLogs() {
+    var f = state.filters;
+    var q = f.q.trim().toLowerCase(), qn = q.replace(/\s+/g, '');
+    var rows = state.logs.filter(function (l) {
+      if (f.cat !== 'ALL' && l.category !== f.cat) return false;
+      if (f.dir !== 'ALL' && l.dir !== f.dir) return false;
+      if (q && l.name.toLowerCase().indexOf(q) === -1 && l.plate.toLowerCase().replace(/\s+/g, '').indexOf(qn) === -1) return false;
+      return true;
+    });
+    var key = state.sort.key, m = state.sort.dir === 'asc' ? 1 : -1;
+    var getter = {
+      no: function (l) { return l.id; }, time: function (l) { return l.ts.getTime(); },
+      name: function (l) { return l.name.toLowerCase(); }, plate: function (l) { return l.plate; },
+      category: function (l) { return l.category; }, dir: function (l) { return l.dir; }, conf: function (l) { return l.conf; }
+    }[key] || function (l) { return l.id; };
+    rows.sort(function (a, b) {
+      var x = getter(a), y = getter(b);
+      if (x < y) return -1 * m;
+      if (x > y) return 1 * m;
+      return (b.id - a.id);
+    });
+    return rows;
+  }
+  function pageList(cur, pages) {
+    if (pages <= 7) { var all = []; for (var i = 1; i <= pages; i++) all.push(i); return all; }
+    var out = [1];
+    var s = Math.max(2, cur - 1), e = Math.min(pages - 1, cur + 1);
+    if (cur <= 3) { s = 2; e = 4; }
+    if (cur >= pages - 2) { s = pages - 3; e = pages - 1; }
+    if (s > 2) out.push('...');
+    for (var j = s; j <= e; j++) out.push(j);
+    if (e < pages - 1) out.push('...');
+    out.push(pages);
+    return out;
+  }
+  function renderVehicleLog() {
+    $('#vl-today').textContent = todayLogs().length;
+    var rows = filteredLogs();
+    var total = rows.length, per = state.perPage;
+    var pages = Math.max(1, Math.ceil(total / per));
+    state.page = Math.min(Math.max(1, state.page), pages);
+    var startIdx = (state.page - 1) * per;
+    var slice = rows.slice(startIdx, startIdx + per);
+    $('#vl-body').innerHTML = slice.length
+      ? slice.map(function (l, i) { return logRowHTML(l, startIdx + i + 1); }).join('')
+      : '<tr class="empty"><td colspan="7">Tidak ada data yang cocok dengan filter.</td></tr>';
+    $('#vl-info').textContent = total ? ('Menampilkan ' + (startIdx + 1) + ' - ' + (startIdx + slice.length) + ' dari ' + total + ' data') : 'Menampilkan 0 data';
+    var html = '<button type="button" data-page="' + (state.page - 1) + '"' + (state.page === 1 ? ' disabled' : '') + ' aria-label="Sebelumnya">&lsaquo;</button>';
+    pageList(state.page, pages).forEach(function (p) {
+      html += p === '...' ? '<span class="gap">...</span>'
+        : '<button type="button" data-page="' + p + '"' + (p === state.page ? ' class="active" aria-current="page"' : '') + '>' + p + '</button>';
+    });
+    html += '<button type="button" data-page="' + (state.page + 1) + '"' + (state.page === pages ? ' disabled' : '') + ' aria-label="Berikutnya">&rsaquo;</button>';
+    $('#vl-pages').innerHTML = html;
+    $$('#vl-table th[data-sort]').forEach(function (th) {
+      th.classList.remove('asc', 'desc');
+      var arr = th.querySelector('.arr');
+      if (th.dataset.sort === state.sort.key) {
+        th.classList.add(state.sort.dir);
+        arr.innerHTML = state.sort.dir === 'asc' ? '&#9650;' : '&#9660;';
+        th.setAttribute('aria-sort', state.sort.dir === 'asc' ? 'ascending' : 'descending');
+      } else { arr.innerHTML = '&#9660;'; th.removeAttribute('aria-sort'); }
+    });
+    // sinkronkan kontrol filter
+    if ($('#vl-q').value !== state.filters.q) $('#vl-q').value = state.filters.q;
+    $('#vl-cat').value = state.filters.cat;
+    $('#vl-dir').value = state.filters.dir;
+    $('#vl-per').value = String(state.perPage);
+  }
+
+  function renderSecurity() {
+    $$('[data-afilter]').forEach(function (b) { b.classList.toggle('active', b.dataset.afilter === state.alertFilter); });
+    var list = state.alertFilter === 'unread' ? state.alerts.filter(function (a) { return !a.read; }) : state.alerts;
+    $('#sec-alerts').innerHTML = list.length ? list.map(function (a) { return alertHTML(a, false); }).join('') : emptyAlerts();
+    $('#mark-all').disabled = unreadCount() === 0;
+    $('#clear-read').disabled = !state.alerts.some(function (a) { return a.read; });
+    renderLastDetection();
+  }
+  function renderLastDetection() {
+    var l = state.logs[0];
+    if (!l) return;
+    $('#det-plate').textContent = l.plate;
+    $('#det-label').textContent = l.dir + ' \u2022 ' + l.conf + '%';
+    $('#det-box').style.borderColor = l.conf < 80 ? 'var(--orange)' : 'var(--green)';
+    $('#det-label').style.background = l.conf < 80 ? 'var(--orange)' : 'var(--green)';
+    $('#ld-plate').textContent = l.plate;
+    $('#ld-name').textContent = l.name;
+    $('#ld-dir').innerHTML = '<span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span>';
+    $('#ld-time').textContent = fmtHM(l.ts);
+  }
+
+  /* =========================================================
+     ROUTER
+     ========================================================= */
+  var ROUTES = {
+    'dashboard': { title: 'Dashboard', render: renderDashboard },
+    'trendline': { title: 'Trendline', render: renderTrendline },
+    'vehicle-log': { title: 'Vehicle Log', render: renderVehicleLog },
+    'security': { title: 'Security Notification', render: renderSecurity }
+  };
+  function getRoute() { return (location.hash || '').replace(/^#\/?/, '').split('?')[0]; }
+  function router() {
+    var route = getRoute();
+    var user = currentUser();
+    if (!user) {
+      if (route !== 'login') { location.replace('#/login'); return; }
+      showLogin();
+      return;
+    }
+    if (!ROUTES[route]) { location.replace('#/dashboard'); return; }
+    showApp(route, user);
+  }
+  function showLogin() {
+    stopCam();
+    state.route = 'login';
+    $('#app-view').hidden = true;
+    $('#login-view').hidden = false;
+    document.title = 'Sign In | Smart Parking Gate FT Untirta';
+    document.body.classList.remove('sb-open');
+  }
+  function showApp(route, user) {
+    var prev = state.route;
+    if (prev === 'security' && route !== 'security') stopCam();
+    state.route = route;
+    $('#login-view').hidden = true;
+    $('#app-view').hidden = false;
+    var name = user.name || 'Admin';
+    $$('.js-username').forEach(function (el) { el.textContent = name; });
+    $$('.js-username-admin').forEach(function (el) { el.textContent = name + ' (Admin)'; });
+    $$('.js-avatar').forEach(function (el) { el.textContent = name.charAt(0).toUpperCase(); });
+    $$('.view').forEach(function (v) { v.hidden = v.dataset.view !== route; });
+    $$('.nav a').forEach(function (a) {
+      var on = a.dataset.route === route;
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    $$('.js-title').forEach(function (el) { el.textContent = ROUTES[route].title; });
+    document.title = ROUTES[route].title + ' | Smart Parking Gate FT Untirta';
+    document.body.classList.remove('sb-open');
+    if (prev !== route) window.scrollTo(0, 0);
+    updateBadges();
+    ROUTES[route].render();
+  }
+  function renderCurrent() {
+    if (state.route && ROUTES[state.route] && !$('#app-view').hidden) {
+      updateBadges();
+      ROUTES[state.route].render();
+    }
+  }
+  function navigate(route) {
+    if (getRoute() === route) renderCurrent(); else location.hash = '#/' + route;
+  }
+
+  /* =========================================================
+     CAMERA (webcam opsional)
+     ========================================================= */
+  var camStream = null, camStarting = false;
+  function setCamUI(on) {
+    $('#cam-start').disabled = on;
+    $('#cam-stop').disabled = !on;
+    $('#cam-video').hidden = !on;
+    $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Webcam Aktif' : 'Simulasi');
+  }
+  function startCam() {
+    if (camStream || camStarting) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('Browser tidak mendukung akses webcam.', 'error');
+      return;
+    }
+    camStarting = true;
+    $('#cam-start').disabled = true;
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
+      camStarting = false;
+      if (state.route !== 'security') { stream.getTracks().forEach(function (t) { t.stop(); }); setCamUI(false); return; }
+      camStream = stream;
+      var v = $('#cam-video');
+      v.srcObject = stream;
+      setCamUI(true);
+      var p = v.play();
+      if (p && p.catch) p.catch(function () { });
+      toast('Webcam aktif.', 'success');
+    }).catch(function (err) {
+      camStarting = false;
+      setCamUI(false);
+      var msg = err && err.name === 'NotAllowedError' ? 'izin ditolak' : err && err.name === 'NotFoundError' ? 'kamera tidak ditemukan' : (err && err.message) || 'error';
+      toast('Tidak dapat mengakses webcam: ' + msg, 'error');
+    });
+  }
+  function stopCam() {
+    if (camStream) { camStream.getTracks().forEach(function (t) { t.stop(); }); camStream = null; }
+    var v = document.getElementById('cam-video');
+    if (v) { try { v.pause(); } catch (e) { } v.srcObject = null; }
+    if (document.getElementById('cam-start')) setCamUI(false);
+  }
+  function snapshot() {
+    var canvas = document.createElement('canvas');
+    var v = $('#cam-video');
+    var w = (camStream && v.videoWidth) || 1280, h = (camStream && v.videoHeight) || 720;
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    if (camStream && v.videoWidth) {
+      ctx.drawImage(v, 0, 0, w, h);
+    } else {
+      var g = ctx.createRadialGradient(w / 2, h * 1.2, 50, w / 2, h / 2, w);
+      g.addColorStop(0, '#1d2a52'); g.addColorStop(1, '#03050f');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
+    var l = state.logs[0], now = new Date();
+    ctx.font = 'bold 28px Arial'; ctx.fillStyle = '#fff';
+    ctx.fillText('CAM-01 \u2022 GATE ENTRY', 30, 50);
+    ctx.fillText(fmtLongDate(now) + ' ' + fmtHMS(now), 30, h - 30);
+    if (l) {
+      ctx.strokeStyle = '#01b574'; ctx.lineWidth = 4;
+      ctx.font = 'bold 56px Arial';
+      var tw = ctx.measureText(l.plate).width;
+      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(w / 2 - tw / 2 - 24, h / 2 - 50, tw + 48, 90);
+      ctx.strokeRect(w / 2 - tw / 2 - 24, h / 2 - 50, tw + 48, 90);
+      ctx.fillStyle = '#fff'; ctx.fillText(l.plate, w / 2 - tw / 2, h / 2 + 18);
+    }
+    canvas.toBlob(function (blob) {
+      if (!blob) { toast('Gagal membuat snapshot.', 'error'); return; }
+      downloadBlob(blob, 'snapshot-' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) + '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.png');
+      toast('Snapshot tersimpan.', 'success');
+    }, 'image/png');
+  }
+
+  /* =========================================================
+     EXPORT CSV
+     ========================================================= */
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  }
+  function exportCSV() {
+    var rows = filteredLogs();
+    if (!rows.length) { toast('Tidak ada data untuk diekspor.', 'error'); return; }
+    var cell = function (v) { v = String(v); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var lines = [['No', 'Tanggal', 'Waktu', 'Nama', 'Plat Nomor', 'Kategori', 'IN/OUT', 'Confidence (%)'].join(',')];
+    rows.forEach(function (l, i) {
+      var d = l.ts;
+      lines.push([i + 1, d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()), fmtHMS(d), l.name, l.plate, l.category, l.dir, l.conf].map(cell).join(','));
+    });
+    var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var n = new Date();
+    downloadBlob(blob, 'vehicle-log-' + n.getFullYear() + '-' + pad2(n.getMonth() + 1) + '-' + pad2(n.getDate()) + '.csv');
+    toast(rows.length + ' baris berhasil diekspor ke CSV.', 'success');
+  }
+
+  /* =========================================================
+     LIVE SIMULATION
+     ========================================================= */
+  var liveTimer = null;
+  function liveTick() {
+    var person = choosePerson(Math.random);
+    if (!person) return;
+    var log = makeLog(person, new Date(), Math.random);
+    state.logs.unshift(log);
+    if (state.logs.length > 2000) state.logs.length = 2000;
+    state.newIds = {}; state.newIds[log.id] = true;
+    setTimeout(function () { delete state.newIds[log.id]; }, 1700);
+    if (log.conf < 80) {
+      addAlert('warning', 'Low confidence plate reading', 'Plat ' + log.plate + ' terbaca dengan confidence ' + log.conf + '% — mohon verifikasi manual.');
+      toast('Peringatan: confidence rendah untuk ' + log.plate, 'error');
+    }
+    var occ = occupancy();
+    if (occ / CAPACITY >= 0.9 && !state.occAlerted) {
+      state.occAlerted = true;
+      addAlert('danger', 'Parking almost full', 'Kapasitas parkir mencapai ' + Math.round(occ / CAPACITY * 100) + '% (' + occ + '/' + CAPACITY + ').');
+    } else if (occ / CAPACITY < 0.85) state.occAlerted = false;
+    renderCurrent();
+  }
+  function setLive(on) {
+    clearInterval(liveTimer); liveTimer = null;
+    if (on) liveTimer = setInterval(liveTick, 6000);
+    $('#live-toggle').checked = on;
+    $('#live-chip').classList.toggle('live-on', on);
+    try { localStorage.setItem('spg_live', on ? '1' : '0'); } catch (e) { }
+  }
+
+  /* =========================================================
+     CLOCK
+     ========================================================= */
+  function updateClockDisplays() {
+    var n = new Date();
+    $('#clock').textContent = fmtHMS(n);
+    var cb = $('#clock-big'); if (cb) cb.textContent = fmtHMS(n);
+    var db = $('#date-big'); if (db) db.textContent = fmtLongDate(n);
+    var ct = $('#cam-time'); if (ct) ct.textContent = fmtLongDate(n) + ' \u2022 ' + fmtHMS(n);
+  }
+
+  /* =========================================================
+     EVENT BINDINGS
+     ========================================================= */
+  function bind() {
+    // Login
+    $('#login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = $('#login-email').value.trim().toLowerCase();
+      var pass = $('#login-pass').value;
+      var err = $('#login-error');
+      var show = function (m) { err.textContent = m; err.hidden = false; };
+      if (!email || !pass) return show('Email dan password wajib diisi.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return show('Format email tidak valid.');
+      if (email !== DEMO.email || pass !== DEMO.password) return show('Email atau password salah.');
+      err.hidden = true;
+      setAuth({ email: email, name: DEMO.name }, $('#remember').checked);
+      $('#login-pass').value = '';
+      toast('Selamat datang kembali, ' + DEMO.name + '!', 'success');
+      if (getRoute() === 'dashboard') router(); else location.hash = '#/dashboard';
+    });
+    $('#toggle-pass').addEventListener('click', function () {
+      var inp = $('#login-pass'), show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      this.innerHTML = icon(show ? 'eyeOff' : 'eye');
+      this.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+    });
+    ['#login-email', '#login-pass'].forEach(function (s) { $(s).addEventListener('input', function () { $('#login-error').hidden = true; }); });
+
+    // Logout
+    $('#logout-btn').addEventListener('click', function () {
+      clearAuth();
+      toast('Anda telah logout.', 'info');
+      location.hash = '#/login';
+    });
+
+    // Sidebar mobile
+    $('#menu-btn').addEventListener('click', function () { document.body.classList.toggle('sb-open'); });
+    $('#sb-backdrop').addEventListener('click', function () { document.body.classList.remove('sb-open'); });
+
+    // Global search
+    $('#global-search').addEventListener('submit', function (e) {
+      e.preventDefault();
+      state.filters.q = $('#global-q').value;
+      state.page = 1;
+      $('#global-q').value = '';
+      navigate('vehicle-log');
+    });
+
+    // Live toggle
+    $('#live-toggle').addEventListener('change', function () {
+      setLive(this.checked);
+      toast(this.checked ? 'Simulasi real-time aktif.' : 'Simulasi real-time dihentikan.', 'info');
+    });
+
+    // Trendline range
+    $$('[data-range]').forEach(function (b) {
+      b.addEventListener('click', function () { state.range = b.dataset.range; renderTrendline(); });
+    });
+
+    // Vehicle log filters
+    var onQ = debounce(function () { state.filters.q = $('#vl-q').value; state.page = 1; renderVehicleLog(); }, 200);
+    $('#vl-q').addEventListener('input', onQ);
+    $('#vl-cat').addEventListener('change', function () { state.filters.cat = this.value; state.page = 1; renderVehicleLog(); });
+    $('#vl-dir').addEventListener('change', function () { state.filters.dir = this.value; state.page = 1; renderVehicleLog(); });
+    $('#vl-per').addEventListener('change', function () { state.perPage = Number(this.value) || 10; state.page = 1; renderVehicleLog(); });
+    $('#vl-reset').addEventListener('click', function () {
+      state.filters = { q: '', cat: 'ALL', dir: 'ALL' };
+      state.sort = { key: 'time', dir: 'desc' };
+      state.page = 1;
+      $('#vl-q').value = '';
+      renderVehicleLog();
+    });
+    $$('#vl-table th[data-sort]').forEach(function (th) {
+      th.tabIndex = 0;
+      var go = function () {
+        var k = th.dataset.sort;
+        if (state.sort.key === k) state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+        else state.sort = { key: k, dir: (k === 'time' || k === 'no' || k === 'conf') ? 'desc' : 'asc' };
+        state.page = 1;
+        renderVehicleLog();
+      };
+      th.addEventListener('click', go);
+      th.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+    $('#vl-pages').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-page]');
+      if (!b || b.disabled) return;
+      state.page = Number(b.dataset.page);
+      renderVehicleLog();
+      $('#vl-table').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    $('#export-csv').addEventListener('click', exportCSV);
+
+    // Row click → detail
+    ['#vl-body', '#dash-log'].forEach(function (s) {
+      $(s).addEventListener('click', function (e) {
+        var tr = e.target.closest('tr[data-id]');
+        if (tr) openLogModal(Number(tr.dataset.id));
+      });
+    });
+
+    // Alerts
+    $('#dash-alerts').addEventListener('click', function (e) { if (e.target.closest('.alert')) navigate('security'); });
+    $('#dash-alerts').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('.alert')) navigate('security'); });
+    function handleAlert(e) {
+      var el = e.target.closest('.alert');
+      if (!el) return;
+      var id = Number(el.dataset.id);
+      var actBtn = e.target.closest('[data-act]');
+      var act = actBtn ? actBtn.dataset.act : 'read';
+      if (act === 'dismiss') {
+        state.alerts = state.alerts.filter(function (a) { return a.id !== id; });
+        toast('Notifikasi dihapus.', 'info');
+      } else {
+        state.alerts.forEach(function (a) { if (a.id === id) a.read = true; });
+      }
+      updateBadges();
+      renderSecurity();
+    }
+    $('#sec-alerts').addEventListener('click', handleAlert);
+    $('#sec-alerts').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.classList.contains('alert')) handleAlert(e); });
+    $$('[data-afilter]').forEach(function (b) {
+      b.addEventListener('click', function () { state.alertFilter = b.dataset.afilter; renderSecurity(); });
+    });
+    $('#mark-all').addEventListener('click', function () {
+      state.alerts.forEach(function (a) { a.read = true; });
+      updateBadges(); renderSecurity();
+      toast('Semua notifikasi ditandai dibaca.', 'success');
+    });
+    $('#clear-read').addEventListener('click', function () {
+      var before = state.alerts.length;
+      state.alerts = state.alerts.filter(function (a) { return !a.read; });
+      updateBadges(); renderSecurity();
+      toast((before - state.alerts.length) + ' notifikasi yang sudah dibaca dihapus.', 'info');
+    });
+
+    // Camera
+    $('#cam-start').addEventListener('click', startCam);
+    $('#cam-stop').addEventListener('click', function () { stopCam(); toast('Webcam dihentikan.', 'info'); });
+    $('#cam-snap').addEventListener('click', snapshot);
+
+    // Modal
+    $('#modal-close').addEventListener('click', closeModal);
+    $('#modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { closeModal(); document.body.classList.remove('sb-open'); }
+    });
+
+    // Resize → redraw charts
+    window.addEventListener('resize', debounce(redrawCharts, 150));
+    window.addEventListener('hashchange', router);
+    window.addEventListener('beforeunload', stopCam);
+    // Sinkronisasi logout/login antar tab
+    window.addEventListener('storage', function (e) { if (e.key === AUTH_KEY) router(); });
+  }
+
+  /* =========================================================
+     INIT
+     ========================================================= */
+  function init() {
+    hydrateIcons(document);
+    hydrateLogos();
+    bind();
+    var live = true;
+    try { live = localStorage.getItem('spg_live') !== '0'; } catch (e) { }
+    setLive(live);
+    updateClockDisplays();
+    setInterval(updateClockDisplays, 1000);
+    router();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+</body>
+</html>
