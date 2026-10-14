@@ -1,6 +1,6 @@
 # 🚗 Smart Parking Gate FT UNTIRTA — Capstone A7
 
-Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recognition (ALPR)** yang dirancang untuk Fakultas Teknik Universitas Sultan Ageng Tirtayasa (FT UNTIRTA). Proyek ini memadukan penangkapan citra plat nomor melalui kamera (Raspberry Pi 4 / PC), inferensi cloud AI (Plate Recognizer API), pencatatan realtime di Firebase, dan antarmuka pemantauan **Web Dashboard Interaktif (SPA)**.
+Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recognition (ALPR)** yang dirancang untuk Fakultas Teknik Universitas Sultan Ageng Tirtayasa (FT UNTIRTA). Proyek ini memadukan penangkapan citra plat nomor melalui kamera Raspberry Pi 3 Model B+, inferensi cloud AI menggunakan Plate Recognizer API, pencatatan realtime di Supabase, dan antarmuka pemantauan **Web Dashboard Interaktif**.
 
 ---
 
