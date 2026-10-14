@@ -1,115 +1,383 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Smart Parking Gate FT Untirta sign-in portal">
-  <title>Smart Parking Gate FT Untirta</title>
-  <link rel="stylesheet" href="globals.css">
-  <link rel="stylesheet" href="styleguide.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    /** @type {import('tailwindcss').Config} */
-    tailwind.config = {
-      corePlugins: {
-        preflight: false,
-      },
-      theme: {
-        extend: {
-          colors: {
-            "blackampwhitewhite": "var(--blackampwhitewhite)",
-            "graygray-400": "var(--graygray-400)"
-          }
-        }
-      },
-      plugins: []
-    };
-  </script>
+  <meta name="description" content="Portal Sign-In Smart Parking Gate FT Untirta">
+  <title>Sign In | Smart Parking Gate FT Untirta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="LoginPage_Global.css">
+  <link rel="stylesheet" href="LoginPage_StyleGuide.css">
+  <style>
+    :root {
+      --blue: #0075ff;
+      --cyan: #2cd9ff;
+      --graygray-400: #a0aec0;
+      --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #020515;
+      color: #fff;
+      font-family: var(--font);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    .login {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+      min-height: 100dvh;
+      position: relative;
+    }
+
+    /* Left Hero */
+    .login-hero {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        linear-gradient(159deg, rgba(15,18,59,.55) 0%, rgba(9,13,46,.55) 59%, rgba(2,5,21,.7) 100%),
+        url("img/image-1.png") center/cover no-repeat,
+        radial-gradient(circle at 30% 30%, #1b2a8a 0%, #0b1150 45%, #040722 100%);
+    }
+    .login-hero .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(2px);
+      opacity: .55;
+      pointer-events: none;
+    }
+    .login-hero .orb.o1 {
+      width: max(420px, 25vw);
+      height: max(420px, 25vw);
+      left: calc(-1 * max(100px, 6vw));
+      bottom: calc(-1 * max(100px, 6vw));
+      background: radial-gradient(circle, rgba(0,117,255,.55), transparent 70%);
+    }
+    .login-hero .orb.o2 {
+      width: max(300px, 18vw);
+      height: max(300px, 18vw);
+      right: calc(-1 * max(50px, 3.5vw));
+      top: 12%;
+      background: radial-gradient(circle, rgba(44,217,255,.35), transparent 70%);
+    }
+
+    /* Brand Card */
+    .brand-card {
+      position: absolute;
+      top: max(24px, 2.2vw);
+      left: max(24px, 2.2vw);
+      display: flex;
+      align-items: center;
+      gap: max(14px, 0.85vw);
+      padding: max(10px, 0.65vw) max(22px, 1.35vw) max(10px, 0.65vw) max(16px, 1vw);
+      border-radius: max(20px, 1.25vw);
+      background: linear-gradient(128deg, rgba(6,11,38,.72) 0%, rgba(26,31,55,.42) 100%);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 10px 30px rgba(0,0,0,.3);
+      z-index: 2;
+    }
+    .brand-card .logo {
+      width: max(56px, 3.3vw);
+      height: max(56px, 3.3vw);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-card .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .brand-card .brand-text {
+      font-weight: 700;
+      font-size: max(14px, 0.92vw);
+      letter-spacing: max(2px, 0.16vw);
+      line-height: 1.28;
+      background: linear-gradient(133deg, #fff 0%, rgba(117,122,140,.35) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Right Login Panel */
+    .login-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: max(32px, 2.5vh) max(28px, 2.5vw);
+      position: relative;
+      min-height: 100vh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      overflow-y: auto;
+      background: radial-gradient(circle at 60% 50%, #0050c8 0%, #06114a 40%, #02051d 100%);
+    }
+
+    .login-form {
+      width: min(92%, max(360px, 23vw));
+      display: flex;
+      flex-direction: column;
+      gap: max(18px, 1.15vw);
+      margin: auto 0;
+      padding: max(8px, 0.8vh) 0;
+    }
+    .login-form h1 {
+      font-size: max(28px, 1.75vw);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .login-form .muted {
+      color: var(--graygray-400);
+      font-size: max(14px, 0.88vw);
+      margin-top: max(6px, 0.4vw);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: max(8px, 0.45vw);
+    }
+    .field > label {
+      font-size: max(13px, 0.82vw);
+      font-weight: 500;
+      padding-left: max(4px, 0.25vw);
+      color: #fff;
+    }
+
+    .input {
+      display: flex;
+      align-items: center;
+      gap: max(10px, 0.6vw);
+      height: max(48px, 2.7vw);
+      padding: 0 max(16px, 0.95vw);
+      border-radius: max(18px, 1.05vw);
+      border: 1px solid rgba(226,232,240,.25);
+      background: linear-gradient(75deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.05) 100%);
+      backdrop-filter: blur(21px);
+      -webkit-backdrop-filter: blur(21px);
+      transition: border-color .15s;
+    }
+    .input:focus-within { border-color: var(--blue); }
+    .input input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: 0;
+      outline: none;
+      color: #fff;
+      font: 500 max(14px, 0.85vw) var(--font);
+    }
+    .input input::placeholder { color: var(--graygray-400); font-size: max(14px, 0.85vw); }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: max(32px, 1.8vw);
+      height: max(32px, 1.8vw);
+      border-radius: max(8px, 0.5vw);
+      border: 0;
+      background: transparent;
+      color: var(--graygray-400);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .icon-btn svg { width: max(16px, 0.95vw); height: max(16px, 0.95vw); stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* Switch */
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: max(10px, 0.6vw);
+      cursor: pointer;
+      user-select: none;
+      font-size: max(12px, 0.75vw);
+    }
+    .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .switch .track {
+      position: relative;
+      width: max(38px, 2.2vw);
+      height: max(20px, 1.15vw);
+      border-radius: 999px;
+      background: #2d3250;
+      transition: background .2s;
+    }
+    .switch .track::after {
+      content: "";
+      position: absolute;
+      top: max(2.5px, 0.15vw);
+      left: max(3px, 0.18vw);
+      width: max(15px, 0.85vw);
+      height: max(15px, 0.85vw);
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .2s;
+    }
+    .switch input:checked + .track { background: var(--blue); }
+    .switch input:checked + .track::after { transform: translateX(max(17px, 1.02vw)); }
+
+    /* Form Error */
+    .form-error {
+      background: rgba(255,56,60,.14);
+      border: 1px solid rgba(255,56,60,.4);
+      color: #ff8a8c;
+      padding: max(10px, 0.6vw) max(14px, 0.85vw);
+      border-radius: max(12px, 0.7vw);
+      font-size: max(13px, 0.78vw);
+      line-height: 1.35;
+    }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      height: max(48px, 2.7vw);
+      border: 0;
+      border-radius: max(14px, 0.8vw);
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: max(13px, 0.78vw);
+      letter-spacing: max(1px, 0.08vw);
+      cursor: pointer;
+      transition: filter .15s, transform .15s;
+    }
+    .btn-submit:hover { filter: brightness(1.15); }
+    .btn-submit:active { transform: translateY(1px); }
+
+    .hint {
+      font-size: max(12px, 0.75vw);
+      color: var(--graygray-400);
+      text-align: center;
+      line-height: 1.45;
+    }
+    .hint code {
+      color: #fff;
+      background: rgba(255,255,255,.08);
+      padding: max(2px, 0.15vw) max(7px, 0.4vw);
+      border-radius: max(6px, 0.35vw);
+      font-size: max(11.5px, 0.7vw);
+    }
+
+    .login-panel footer {
+      position: static;
+      margin-top: auto;
+      padding-top: max(16px, 1.5vh);
+      color: var(--graygray-400);
+      font-size: max(13px, 0.8vw);
+      letter-spacing: 0.02em;
+      text-align: center;
+    }
+
+    @media (max-width: 860px) {
+      .login { grid-template-columns: 1fr; }
+      .login-hero { min-height: 220px; padding: 20px 0; }
+      .brand-card { position: relative; top: auto; left: auto; margin: 12px auto; }
+      .login-panel { min-height: auto; padding: 32px 20px; }
+      .login-form { width: min(92%, 380px); margin: 16px auto; }
+    }
+  </style>
 </head>
 <body>
-  <main class="w-full min-w-[1920px] min-h-[1032px] relative">
-    <section class="absolute h-[1038px] -top-1.5 left-0 flex items-start min-w-[1920px]" aria-label="Smart Parking Gate sign-in">
-      <div class="w-[1920px] h-[1038px] relative">
-        <footer class="absolute top-0 left-0 h-[1038px] flex px-[404px] py-[15px] justify-end items-end min-w-[1920px] [background:linear-gradient(159deg,rgba(15,18,59,1)_0%,rgba(9,13,46,1)_59%,rgba(2,5,21,1)_100%)]">
-          <div class="w-[139px] flex">
-            <div class="w-[141px] flex">
-              <p class="w-[139px] h-[21px] [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-[#a0aec0] text-sm text-center tracking-[0] leading-[21px] whitespace-nowrap">
-                © 2026 Capstone A7
-              </p>
-            </div>
-          </div>
-        </footer>
-        <section class="absolute w-[960px] h-[1032px] top-1.5 left-0 flex bg-[url(legacy:image:md5:32:300)] bg-[100%_100%]" aria-label="Portal introduction">
-          <div class="mt-[480px] w-[628px] h-[72px] ml-[168px] flex flex-col gap-4">
-            <p class="ml-[150px] w-[324px] h-5 [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-white text-xl text-center tracking-[3.60px] leading-5 whitespace-nowrap">
-              INSPIRED BY THE FUTURE:
-            </p>
-            <h1 class="w-[624px] h-9 [background:linear-gradient(156deg,rgba(255,255,255,1)_0%,rgba(33,36,47,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-transparent text-4xl text-center tracking-[6.48px] leading-9 whitespace-nowrap">
-              THE VISION UI DASHBOARD
-            </h1>
-          </div>
-        </section>
-        <form class="absolute w-[18.23%] h-[38.33%] top-[26.59%] left-[66.56%]" action="#" method="post" aria-labelledby="welcome-heading">
-          <div class="absolute top-0 left-px w-[223px] h-[66px] flex flex-col gap-[6.5px]">
-            <h2 id="welcome-heading" class="w-[219px] h-[39px] text-white text-3xl tracking-[0] leading-[39.0px] whitespace-nowrap">
-              Welcome Back
-            </h2>
-            <p class="w-[163px] h-5 [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-graygray-400 text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
-              Please enter your details
-            </p>
-          </div>
-          <div class="absolute w-[100.57%] h-[18.75%] top-[25.38%] left-0">
-            <div class="flex w-[100.57%] h-[72.34%] items-center px-5 py-0 absolute top-[30.35%] left-0 rounded-[20px] overflow-hidden border-[none] backdrop-blur-[21px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(21px)_brightness(100%)] [background:linear-gradient(75deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.04)_100%)]">
-              <label class="sr-only" for="email">Email</label>
-              <input id="email" name="email" type="email" autocomplete="email" required placeholder="Your email address" class="flex flex-col w-[311px] items-start justify-center relative overflow-hidden bg-transparent border-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-graygray-400 text-sm tracking-[0] leading-[19.6px] placeholder:text-graygray-400">
-            </div>
-            <label for="email" class="absolute top-0 left-1 text-white text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
-              Email
-            </label>
-          </div>
-          <div class="absolute w-[100.57%] h-[18.72%] top-[50.26%] left-0">
-            <div class="flex w-[100.57%] h-[72.42%] items-center px-5 py-0 absolute top-[30.26%] left-0 rounded-[20px] overflow-hidden border-[none] backdrop-blur-[21px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(21px)_brightness(100%)] [background:linear-gradient(75deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.04)_100%)]">
-              <label class="sr-only" for="password">Password</label>
-              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password" class="flex flex-col w-[311px] items-start justify-center relative overflow-hidden bg-transparent border-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-graygray-400 text-sm tracking-[0] leading-[19.6px] placeholder:text-graygray-400">
-            </div>
-            <label for="password" class="absolute top-0 left-1 text-white text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
-              Password
-            </label>
-          </div>
-          <div class="absolute top-[298px] left-px w-[133px] h-[19px]">
-            <label for="remember-me" class="absolute top-px left-[46px] text-white text-xs tracking-[0] leading-[18.0px] whitespace-nowrap cursor-pointer">
-              Remember me
-            </label>
-            <div class="flex flex-col w-[27.07%] h-[99.81%] items-end justify-center gap-[9.34px] pl-[1.44px] pr-[2.5px] py-[1.44px] absolute top-0 left-0 bg-[#0075ff] rounded-[97.74px] overflow-hidden">
-              <input id="remember-me" name="remember-me" type="checkbox" class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0">
-              <span class="relative w-[13.5px] h-[13.5px] bg-blackampwhitewhite rounded-[6.75px] pointer-events-none"></span>
-            </div>
-          </div>
-          <button type="submit" class="flex w-[100.00%] h-[11.30%] items-center justify-center px-2 py-0 absolute top-[88.70%] left-0 bg-[#0075ff] rounded-xl backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)]">
-            <span class="inline-flex flex-col items-center justify-center relative flex-[0_0_auto] overflow-hidden">
-              <span class="inline-flex h-6 items-center relative">
-                <span class="inline-flex items-start gap-1 relative flex-[0_0_auto] overflow-hidden">
-                  <span class="relative flex items-center justify-center w-fit mt-[-0.50px] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-white text-[10px] text-center tracking-[0] leading-[15.0px] whitespace-nowrap">
-                    SIGN IN
-                  </span>
-                </span>
-              </span>
-              <span class="inline-flex items-start px-3 py-0 relative flex-[0_0_auto]">
-                <span class="relative w-px h-px mr-[-1.00px] bg-[#c4c4c4]"></span>
-              </span>
-            </span>
-          </button>
-        </form>
-        <img class="absolute top-0 left-0 w-[967px] h-[1032px] aspect-[0.94]" src="img/image-1.png" alt="Smart Parking Gate building">
-        <div class="absolute -top-1.5 left-0 w-[967px] h-[1038px] [background:linear-gradient(159deg,rgba(15,18,59,0.52)_0%,rgba(9,13,46,0.52)_59%,rgba(2,5,21,0.52)_100%)]" aria-hidden="true"></div>
-        <div class="absolute top-[30px] left-[34px] w-[341px] h-20 rounded-[20px] backdrop-blur-[60px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(60px)_brightness(100%)] [background:linear-gradient(128deg,rgba(6,11,38,0.68)_0%,rgba(26,31,55,0.36)_100%)]" aria-hidden="true"></div>
-        <p class="absolute top-[54px] left-[122px] [background:linear-gradient(133deg,rgba(255,255,255,1)_0%,rgba(117,122,140,0)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Plus_Jakarta_Sans-Bold',Helvetica] font-bold text-transparent text-base tracking-[2.88px] leading-4">
-          SMART PARKING GATE<br>
-          FT UNTIRTA
-        </p>
-        <img class="absolute top-[41px] left-[51px] w-[59px] h-[59px] aspect-[1] object-cover" src="img/LOGO-UNTIRTA-1.png" alt="Universitas Sultan Ageng Tirtayasa logo">
+  <div class="login">
+    <div class="login-hero">
+      <span class="orb o1"></span><span class="orb o2"></span>
+      <div class="brand-card">
+        <div class="logo">
+          <img src="img/LOGO-UNTIRTA-1.png" alt="Logo Untirta" onerror="this.onerror=null;this.src='img/logo-untirta-1.png';">
+        </div>
+        <p class="brand-text">SMART PARKING GATE<br>FT UNTIRTA</p>
       </div>
-    </section>
-  </main>
+    </div>
+    <div class="login-panel">
+      <form id="login-form" class="login-form" novalidate>
+        <div>
+          <h1>Welcome Back</h1>
+          <p class="muted">Please enter your details</p>
+        </div>
+        <div class="field">
+          <label for="login-email">Email</label>
+          <div class="input">
+            <input id="login-email" type="email" autocomplete="email" placeholder="Your email address" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="login-pass">Password</label>
+          <div class="input">
+            <input id="login-pass" type="password" autocomplete="current-password" placeholder="Your password" required>
+            <button type="button" id="toggle-pass" class="icon-btn" aria-label="Tampilkan password">
+              <svg id="eye-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="remember">
+          <span class="track"></span>
+          <span>Remember me</span>
+        </label>
+        <p id="login-error" class="form-error" role="alert" style="display:none"></p>
+        <button class="btn-submit" type="submit">SIGN IN</button>
+        <p class="hint">Akun demo: <code>admin@untirta.ac.id</code> / <code>admin123</code></p>
+      </form>
+      <footer>&copy; 2026 Capstone A7</footer>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var DEMO = { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki' };
+      var form = document.getElementById('login-form');
+      var emailInp = document.getElementById('login-email');
+      var passInp = document.getElementById('login-pass');
+      var errBox = document.getElementById('login-error');
+      var toggleBtn = document.getElementById('toggle-pass');
+
+      toggleBtn.addEventListener('click', function () {
+        var show = passInp.type === 'password';
+        passInp.type = show ? 'text' : 'password';
+        var svg = document.getElementById('eye-icon');
+        svg.innerHTML = show
+          ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+          : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      });
+
+      [emailInp, passInp].forEach(function (inp) {
+        inp.addEventListener('input', function () { errBox.style.display = 'none'; });
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = emailInp.value.trim().toLowerCase();
+        var pass = passInp.value;
+        if (!email || !pass) {
+          errBox.textContent = 'Email dan password wajib diisi.';
+          errBox.style.display = 'block';
+          return;
+        }
+        if (email !== DEMO.email || pass !== DEMO.password) {
+          errBox.textContent = 'Email atau password salah.';
+          errBox.style.display = 'block';
+          return;
+        }
+        try {
+          var data = JSON.stringify({ email: email, name: DEMO.name });
+          if (document.getElementById('remember').checked) localStorage.setItem('spg_auth', data);
+          else sessionStorage.setItem('spg_auth', data);
+        } catch (e) {}
+        window.location.href = 'index.html#/dashboard';
+      });
+    })();
+  </script>
 </body>
 </html>
