@@ -25,8 +25,11 @@ CAMERA_HEIGHT = 480
 JPEG_QUALITY = 85                           # Kualitas kompresi upload citra
 
 # ── GPIO Pin Mapping (BCM numbering pada RPi 3B+) ─
-# Sesuai diagram wiring:
-PIN_IR_SENSOR = 17       # Pin 11 (Sensor Infrared E18-D80NK - Active LOW)
+# Dual Infrared Sensors (Sebelum & Setelah Palang):
+PIN_IR_BEFORE = 17       # Pin 11 (Sensor IR 1: Sebelum Palang — Pemicu Kedatangan / ALPR, Active LOW)
+PIN_IR_AFTER = 23        # Pin 16 (Sensor IR 2: Setelah Palang — Pemicu Penutup Palang, Active LOW)
+PIN_IR_SENSOR = PIN_IR_BEFORE # Alias kompatibilitas
+
 PIN_PUSH_BUTTON = 27     # Pin 13 (Push Button Manual Buka Gerbang - Active LOW)
 PIN_SERVO = 18           # Pin 12 (Motor Servo Palang - Hardware PWM0)
 PIN_BUZZER = 22          # Pin 15 (Buzzer Flash 12V via Transistor NPN - Active HIGH)
@@ -42,8 +45,9 @@ GATE_MODE = "EXIT"           # Sistem Khusus Gerbang Keluar Parkir
 GATE_DIRECTION = "OUT"       # Default arah log kendaraan: OUT (Keluar)
 SERVO_OPEN_ANGLE = 90        # Sudut palang terbuka (derajat)
 SERVO_CLOSE_ANGLE = 0        # Sudut palang tertutup (derajat)
-GATE_OPEN_DURATION = 4.0     # Waktu jeda palang terbuka sebelum ditutup kembali (detik)
 RFID_WAIT_TIMEOUT = 12.0     # Batas waktu tunggu tap RFID setelah plat terbaca (detik)
+GATE_CLOSE_DELAY = 2.0       # Timer jeda setelah Sensor IR 2 bebas sebelum palang menutup (detik)
+GATE_MAX_WAIT = 25.0         # Batas waktu maksimal tunggu kendaraan melintas sebelum fail-safe (detik)
 
 # ── Database (Supabase Cloud PostgreSQL) ───────────
 # Dapatkan dari: Supabase Dashboard -> Project Settings -> API

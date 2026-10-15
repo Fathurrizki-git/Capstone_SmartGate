@@ -10,18 +10,19 @@ Sistem ditenagai oleh **Raspberry Pi 3 Model B+** dengan catu daya mandiri berte
 
 ---
 
-## 📌 Daftar 8 Komponen Sistem
+## 📌 Daftar Komponen Sistem
 
 | No | Komponen | Fungsi & Spesifikasi |
 |---|---|---|
-| 1 | **Raspberry Pi 3 Model B+** | Pusat pemrosesan, pembacaan sensor, inferensi API, dan kendali aktuator gerbang keluar |
-| 2 | **Webcam USB** | Kamera penangkap foto plat nomor kendaraan saat berada di depan palang keluar |
-| 3 | **RFID USB 13.56 MHz** | Pembaca kartu KTM / kartu civitas akademika untuk verifikasi keluar berbasis USB HID |
-| 4 | **Buzzer Flash AD16-22SM 12V** | Indikator suara & lampu strobo saat verifikasi keluar disetujui atau ditolak |
+| 1 | **Raspberry Pi 3 Model B+** | Pusat pemrosesan, inferensi API, dan kendali logika gerbang keluar |
+| 2 | **Webcam USB** | Kamera penangkap plat nomor saat kendaraan mendekati palang keluar |
+| 3 | **RFID USB 13.56 MHz** | Pembaca kartu KTM / kartu civitas akademika berbasis USB HID |
+| 4 | **Buzzer Flash AD16-22SM 12V** | Indikator suara & lampu strobo saat verifikasi keluar disetujui / ditolak |
 | 5 | **Motor Servo (25kg/standard)** | Aktuator penggerak palang gerbang keluar (0° tertutup, 90° terbuka) |
-| 6 | **LCD I2C 20x4** | Layar panduan instruksi gerbang keluar dan status akses pengendara |
-| 7 | **Push Button** | Tombol manual override petugas untuk membuka palang keluar bagi tamu/belum terdaftar |
-| 8 | **Sensor Infrared E18-D80NK** | Sensor pendeteksi kedatangan kendaraan di depan gerbang keluar |
+| 6 | **LCD I2C 20x4** | Layar panduan instruksi pengendara dan status verifikasi keluar |
+| 7 | **Push Button** | Tombol manual override petugas untuk membuka gerbang bagi tamu / belum terdaftar |
+| 8 | **Sensor Infrared 1 (Sebelum Palang)** | E18-D80NK (GPIO 17 - Pin 11): Deteksi kedatangan kendaraan agar kamera tidak memotret terus-menerus |
+| 9 | **Sensor Infrared 2 (Setelah Palang)** | E18-D80NK (GPIO 23 - Pin 16): Deteksi kendaraan melintas sebagai pemicu penutupan palang otomatis via safety timer |
 
 ---
 
@@ -32,16 +33,18 @@ Sesuai dengan skema wiring kelistrikan sistem:
 ```text
 Raspberry Pi 3 Model B+ (Header GPIO 40-Pin):
    Pin 2  (5V)          ------> VCC LCD I2C 20x4
-   Pin 4  (5V)          ------> VCC Sensor Infrared E18-D80NK
+   Pin 4  (5V)          ------> VCC Sensor IR 1 & Sensor IR 2 (E18-D80NK)
    Pin 6  (GND)         ------> GND LCD I2C 20x4
-   Pin 9  (GND)         ------> GND Sensor Infrared
+   Pin 9  (GND)         ------> GND Sensor IR 1 (Sebelum Palang)
    Pin 14 (GND)         ------> GND Push Button Manual
+   Pin 20 (GND)         ------> GND Sensor IR 2 (Setelah Palang)
    Pin 3  (GPIO 2 / SDA) ------> SDA LCD I2C 20x4
    Pin 5  (GPIO 3 / SCL) ------> SCL LCD I2C 20x4
-   Pin 11 (GPIO 17)     ------> OUT Sensor Infrared E18-D80NK (Active LOW)
+   Pin 11 (GPIO 17)     ------> OUT Sensor IR 1 Sebelum Palang (Active LOW)
    Pin 12 (GPIO 18)     ------> Signal Motor Servo Palang (Hardware PWM0)
    Pin 13 (GPIO 27)     ------> Signal Push Button Manual (Active LOW, Pull-Up)
    Pin 15 (GPIO 22)     ------> Base Transistor NPN (Driver Buzzer Flash 12V)
+   Pin 16 (GPIO 23)     ------> OUT Sensor IR 2 Setelah Palang (Active LOW)
    Port USB 1           ------> Webcam USB
    Port USB 2           ------> RFID USB 13.56 MHz Reader
 ```
@@ -56,27 +59,27 @@ Raspberry Pi 3 Model B+ (Header GPIO 40-Pin):
 
 ---
 
-## 🔄 Alur Logika Verifikasi Ganda Gerbang Keluar (Dual-Auth Exit Gate)
+## 🔄 Alur Logika Verifikasi Ganda & Penutup Palang Otomatis (Dual IR Sensor)
 
-Sistem menggunakan **Dual-Factor Authentication (2FA)** demi keamanan kendaraan keluar:
-- **Syarat Buka Otomatis:** Kamera membaca plat nomor **DAN** pengendara men-tap kartu RFID. **Kedua data ini HARUS COCOK** pada pemilik yang sama di database `registered_vehicles`!
-- **Jika Tidak Cocok / Belum Terdaftar:** Palang keluar **tetap tertutup** dan alarm berbunyi.
-- **Buka Manual (Bypass Tamu):** Petugas keamanan memeriksa manual (karcis/STNK tamu) lalu menekan **Push Button (GPIO 27)**.
+Sistem menggunakan **Dual-Factor Authentication (2FA)** dan **2 Sensor Infrared Bebas Bug**:
+1. **Sensor IR 1 (Sebelum Palang):** Memicu webcam mengambil foto plat nomor dan meminta pengendara men-tap RFID. Kamera **tidak mengambil gambar terus-menerus** jika tidak ada kendaraan.
+2. **Dual Verification:** Plat nomor **DAN** Kartu RFID **KEDUANYA HARUS COCOK** pada data pemilik yang sama di database `registered_vehicles`.
+3. **Buka Manual (Bypass Tamu):** Jika belum terdaftar, petugas memeriksa manual lalu menekan **Push Button (GPIO 27)**.
+4. **Sensor IR 2 (Setelah Palang) + Safety Timer:** Setelah palang terbuka, sistem mendeteksi mobil melintas ke Sensor 2. Ketika mobil telah sepenuhnya melewati Sensor 2, sistem mengaktifkan **Safety Timer (2.0s)** sebelum palang turun ke 0°. Jika ada kendaraan susulan memicu Sensor 2 selama timer, timer langsung **direset** agar palang tidak pernah menimpa kendaraan!
 
 ```mermaid
 flowchart TD
-    A["🚗 Kendaraan di Gerbang Keluar"] --> B["🔴 Sensor IR Terhalang (GPIO 17)"]
-    B --> C["📸 1. Webcam USB: Baca Plat Nomor (ALPR)"]
+    A["🚗 Kendaraan Mendekati Gerbang Keluar"] --> B["🔴 Sensor IR 1 Terhalang (GPIO 17)"]
+    B --> C["📸 1. Webcam USB: Capture Plat Nomor (ALPR)"]
     C --> D["💳 2. Pengendara Tap Kartu RFID 13.56 MHz"]
 
-    C & D --> E["🔍 Pencocokan Ganda ke Supabase (registered_vehicles)"]
+    C & D --> E["🔍 Verifikasi Ganda ke Supabase (registered_vehicles)"]
 
     E -->|KEDUA DATA COCOK (Plat + RFID Sama)| F["✅ AKSES KELUAR DITERIMA"]
     F --> F1["LCD: 'HATI-HATI DI JALAN :)' & Nama Pemilik"]
     F1 --> F2["Buzzer: Beep 2x Pendek"]
     F2 --> F3["Servo: Buka Palang Keluar (90°)"]
-    F3 --> F4["Kirim Full Data ke vehicle_logs (Arah: OUT)"]
-    F4 --> F5["Kendaraan Lewat (Sensor IR Clear) -> Palang Tutup"]
+    F3 --> F4["Kirim Log Lengkap ke Supabase (Arah: OUT)"]
 
     E -->|Plat & RFID BEDA / Kartu Orang Lain| G["❌ DATA TIDAK COCOK (DITOLAK)"]
     E -->|Belum Terdaftar / Tamu| H["❌ BELUM TERDAFTAR"]
@@ -84,6 +87,14 @@ flowchart TD
     G & H --> I["Palang Keluar TETAP TERTUTUP + Alarm Strobo"]
     I --> J["🔘 Petugas Cek Manual & Tekan Push Button (GPIO 27)"]
     J --> F3
+
+    F4 --> K["🚗 Kendaraan Bergerak Maju Melewati Palang"]
+    K --> L["🟡 Sensor IR 2 Terdeteksi (GPIO 23 - Sedang Melintas)"]
+    L --> M["🟢 Sensor IR 2 Bebas (Bodi Mobil Selesai Melintas)"]
+    M --> N["⏱️ Mulai Safety Countdown Timer (2.0 Detik)"]
+    N -->|Ada objek memicu IR 2 lagi| L
+    N -->|Timer Selesai & Area Bebas| O["🔒 Servo: Tutup Palang Keluar (0°)"]
+    O --> P["Standby Menunggu Kendaraan Berikutnya"]
 ```
 
 ---

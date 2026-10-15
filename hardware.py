@@ -2,7 +2,7 @@
 Modul Kontrol Perangkat Keras (Hardware Controller)
 Perangkat: Raspberry Pi 3 Model B+
 
-Mendukung 8 Komponen:
+Mendukung Komponen:
 1. Raspberry Pi 3 Model B+ (Sistem Utama)
 2. Webcam USB (via OpenCV)
 3. RFID USB 13.56 MHz (Background USB Listener)
@@ -10,7 +10,9 @@ Mendukung 8 Komponen:
 5. Motor Servo Palang (GPIO18 - Pin 12)
 6. LCD I2C 20x4 (SDA: GPIO2 / Pin 3, SCL: GPIO3 / Pin 5)
 7. Push Button Manual (GPIO27 - Pin 13)
-8. Sensor Infrared E18-D80NK (GPIO17 - Pin 11)
+8. Dual Sensor Infrared E18-D80NK:
+   - Sensor IR 1 (Sebelum Palang): GPIO 17 - Pin 11 (Deteksi Kedatangan / ALPR)
+   - Sensor IR 2 (Setelah Palang): GPIO 23 - Pin 16 (Pemicu Penutup Palang)
 
 Didesain fleksibel:
 - Berjalan otomatis di Raspberry Pi dengan GPIO nyata.
@@ -118,8 +120,11 @@ class HardwareManager:
 
         if self.is_rpi:
             print("[OK] Menginisialisasi GPIO Raspberry Pi 3 Model B+...")
-            # 1. Sensor Infrared (Active LOW)
-            GPIO.setup(config.PIN_IR_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            # 1. Dual Sensor Infrared E18-D80NK (Active LOW: 0 = Terdeteksi, 1 = Bebas)
+            # Sensor 1 (Sebelum Palang): Pemicu deteksi kedatangan & ALPR
+            GPIO.setup(config.PIN_IR_BEFORE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            # Sensor 2 (Setelah Palang): Pemicu penutupan palang otomatis
+            GPIO.setup(config.PIN_IR_AFTER, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             
             # 2. Push Button Manual (Active LOW)
             GPIO.setup(config.PIN_PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -192,14 +197,27 @@ class HardwareManager:
                 print("  [BUZZER] ALARM PANJANG! (Akses Ditolak)")
         threading.Thread(target=_run, daemon=True).start()
 
-    def is_vehicle_detected(self) -> bool:
+    def is_vehicle_at_sensor1(self) -> bool:
         """
-        Cek apakah sensor Infrared mendeteksi adanya kendaraan di depan gerbang.
+        Cek apakah Sensor IR 1 (sebelum palang) mendeteksi kendaraan mendekat.
         Sensor E18-D80NK aktif LOW (0 = ada kendaraan, 1 = tidak ada).
         """
         if self.is_rpi:
-            return GPIO.input(config.PIN_IR_SENSOR) == GPIO.LOW
+            return GPIO.input(config.PIN_IR_BEFORE) == GPIO.LOW
         return False
+
+    def is_vehicle_at_sensor2(self) -> bool:
+        """
+        Cek apakah Sensor IR 2 (setelah palang) mendeteksi kendaraan melintas.
+        Sensor E18-D80NK aktif LOW (0 = ada kendaraan, 1 = tidak ada).
+        """
+        if self.is_rpi:
+            return GPIO.input(config.PIN_IR_AFTER) == GPIO.LOW
+        return False
+
+    def is_vehicle_detected(self) -> bool:
+        """Alias untuk is_vehicle_at_sensor1() untuk kompatibilitas."""
+        return self.is_vehicle_at_sensor1()
 
     def is_button_pressed(self) -> bool:
         """

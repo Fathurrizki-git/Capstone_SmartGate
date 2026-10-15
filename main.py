@@ -16,7 +16,9 @@ Komponen Terintegrasi:
   5. Motor Servo Palang (GPIO18 - Pin 12)
   6. LCD I2C 20x4 (SDA: GPIO2 / Pin 3, SCL: GPIO3 / Pin 5)
   7. Push Button Manual (GPIO27 - Pin 13)
-  8. Sensor Infrared E18-D80NK (GPIO17 - Pin 11)
+  8. Dual Sensor Infrared E18-D80NK:
+     - Sensor IR 1 (Sebelum Palang): GPIO 17 - Pin 11 (Deteksi Kedatangan / ALPR)
+     - Sensor IR 2 (Setelah Palang): GPIO 23 - Pin 16 (Pemicu Penutup Palang)
 """
 
 import os
@@ -127,15 +129,8 @@ class SmartParkingExitGate:
             custom_info=info
         )
 
-        # 5. Keamanan: Tunggu kendaraan melintas melewati sensor IR
-        print(f"  [HOLD] Palang terbuka selama {config.GATE_OPEN_DURATION} detik...")
-        time.sleep(config.GATE_OPEN_DURATION)
-        self.hw.wait_for_vehicle_clear(timeout=6.0)
-
-        # 6. Tutup Palang Kembali (0 Derajat)
-        self.hw.close_gate()
-        time.sleep(1.0)
-        self.hw.lcd.display_standby()
+        # 5. Keamanan & Penutup Palang Otomatis (Sensor IR 2 + Safety Timer)
+        self.wait_and_close_gate()
 
     def handle_exit_failed(self, info: dict, reason: str = "TIDAK COCOK"):
         """Aksi saat verifikasi keluar gagal (Salah Kartu / Belum Terdaftar)."""
@@ -208,10 +203,150 @@ class SmartParkingExitGate:
             custom_info=manual_info
         )
 
-        time.sleep(config.GATE_OPEN_DURATION)
-        self.hw.wait_for_vehicle_clear(timeout=6.0)
+        # Keamanan & Penutup Palang Otomatis (Sensor IR 2 + Safety Timer)
+        self.wait_and_close_gate()
+
+    def wait_and_close_gate(self):
+        """
+        Logika Penutup Palang Otomatis Berbasis 2 Sensor Infrared (Bebas Bug):
+        - Sensor IR 1 (Sebelum Palang): Memastikan kendaraan mulai maju.
+        - Sensor IR 2 (Setelah Palang): Mendeteksi kendaraan melintas melewati palang.
+
+        Alur Eksekusi Tanpa Bug:
+        1. Tunggu kendaraan bergerak maju & memicu Sensor IR 2 (PIN_IR_AFTER == LOW).
+           Jika kendaraan mogok/batal melintas hingga GATE_MAX_WAIT detik, palang ditutup fail-safe.
+        2. Tunggu kendaraan SELESAI melintasi Sensor IR 2 (PIN_IR_AFTER == HIGH).
+           Mencegah palang turun saat bodi kendaraan masih berada di bawah palang/sensor.
+        3. Mulai timer jeda GATE_CLOSE_DELAY (misal 2.0 detik) sebelum palang menutup.
+           PROTEKSI RE-TRIGGER: Jika Sensor IR 2 terhalang kembali selama countdown
+           (misal kendaraan panjang / ada mobil lain menempel), timer otomatis DIRESET
+           dan kembali menunggu sensor bebas agar palang tidak pernah menimpa kendaraan!
+        4. Setelah timer selesai dan aman, buzzer berbunyi singkat & palang ditutup ke 0 derajat.
+        """
+        if not self.hw.is_rpi:
+            # Mode Simulasi di PC / Windows
+            print("  [SIMULASI] Menunggu kendaraan melaju menuju Sensor IR 2 (Setelah Palang)...")
+            time.sleep(1.2)
+            print("  [SIMULASI] Sensor IR 2 TERDETEKSI (Kendaraan sedang melintas di bawah palang).")
+            time.sleep(1.2)
+            print("  [SIMULASI] Sensor IR 2 BEBAS (Kendaraan telah melewati palang).")
+            print(f"  [SIMULASI] Menjalankan safety timer {config.GATE_CLOSE_DELAY} detik sebelum menutup palang...")
+            time.sleep(config.GATE_CLOSE_DELAY)
+            self.hw.buzzer_beep(0.1, 1)
+            self.hw.close_gate()
+            print("  [GERBANG] Palang berhasil ditutup kembali (0 derajat).")
+            time.sleep(1.0)
+            self.hw.lcd.display_standby()
+            return
+
+        start_time = time.time()
+        max_wait = getattr(config, 'GATE_MAX_WAIT', 25.0)
+        close_delay = getattr(config, 'GATE_CLOSE_DELAY', 2.0)
+
+        print("\n  [SAFETY GATE] Palang terbuka. Menunggu kendaraan menuju Sensor IR 2 (Setelah Palang)...")
+        self.hw.lcd.display(
+            "  SILAKAN MELINTAS  ",
+            "   HATI-HATI JALAN  ",
+            "MENUJU SENSOR 2...  ",
+            "PALANG TERBUKA (90*)"
+        )
+
+        # -----------------------------------------------------------------
+        # TAHAP 1: Tunggu kendaraan menyentuh/memicu Sensor IR 2
+        # -----------------------------------------------------------------
+        sensor2_triggered = False
+        while time.time() - start_time < max_wait:
+            if self.hw.is_vehicle_at_sensor2():
+                sensor2_triggered = True
+                print("  [IR 2 AKTIF \u2705] Kendaraan terdeteksi melintasi Sensor IR 2!")
+                break
+            time.sleep(0.05)
+
+        # Kasus Fail-safe: Kendaraan tidak pernah mencapai Sensor 2 dalam GATE_MAX_WAIT detik
+        if not sensor2_triggered:
+            if not self.hw.is_vehicle_at_sensor1():
+                print(f"  [FAIL-SAFE] Timeout {max_wait}s: Kendaraan batal melintas / sudah pergi. Menutup palang.")
+            else:
+                print(f"  [FAIL-SAFE] Timeout {max_wait}s: Menutup palang demi keamanan.")
+            self.hw.close_gate()
+            time.sleep(1.0)
+            self.hw.lcd.display_standby()
+            return
+
+        # -----------------------------------------------------------------
+        # TAHAP 2: Tunggu kendaraan SELESAI melintasi Sensor IR 2
+        # (Sensor 2 harus kembali HIGH / tidak terhalang)
+        # -----------------------------------------------------------------
+        print("  [IR 2 PROSES] Kendaraan sedang melintas. Menunggu seluruh bodi melewati Sensor 2...")
+        self.hw.lcd.display(
+            " KENDARAAN MELINTAS ",
+            "   JANGAN BERHENTI  ",
+            "MELEWATI SENSOR 2...",
+            "PALANG TERBUKA (90*)"
+        )
+
+        stuck_timeout = 25.0
+        stuck_start = time.time()
+        while self.hw.is_vehicle_at_sensor2():
+            if time.time() - stuck_start > stuck_timeout:
+                print("  [WARN] Kendaraan terdiam di atas Sensor IR 2 lebih dari 25s!")
+                break
+            time.sleep(0.1)
+
+        print("  [IR 2 CLEAR \u2705] Kendaraan telah selesai melewati Sensor IR 2.")
+
+        # -----------------------------------------------------------------
+        # TAHAP 3: Safety Countdown Timer sebelum palang menutup
+        # Dengan re-trigger protection: jika Sensor 2 terhalang lagi, reset timer!
+        # -----------------------------------------------------------------
+        print(f"  [SAFETY TIMER] Memulai timer penutup {close_delay} detik...")
+        
+        timer_remaining = close_delay
+        interval = 0.1
+        while timer_remaining > 0:
+            # Re-trigger protection: Jika ada kendaraan susulan / objek terdeteksi lagi di IR 2
+            if self.hw.is_vehicle_at_sensor2():
+                print("  [RE-TRIGGER \u26a0\ufe0f] Sensor IR 2 kembali terhalang! Mereset safety timer...")
+                self.hw.lcd.display(
+                    "OBJEK TERDETEKSI IR2",
+                    "MENUNGGU BEBAS...   ",
+                    "TIMER DIRESET       ",
+                    "PALANG TETAP TERBUKA"
+                )
+                while self.hw.is_vehicle_at_sensor2():
+                    time.sleep(0.1)
+                timer_remaining = close_delay # Reset timer penuh
+                continue
+
+            self.hw.lcd.display(
+                "  KENDARAAN LEWAT   ",
+                " SENSOR 2 CLEAR OK  ",
+                "PALANG AKAN MENUTUP ",
+                f"WAKTU: {timer_remaining:.1f} DETIK"
+            )
+            time.sleep(interval)
+            timer_remaining -= interval
+
+        # -----------------------------------------------------------------
+        # TAHAP 4: Tutup Palang
+        # -----------------------------------------------------------------
+        self.hw.buzzer_beep(0.1, 1)
         self.hw.close_gate()
-        time.sleep(1.0)
+        print("  [GERBANG] Palang berhasil ditutup kembali (0 derajat).")
+
+        self.hw.lcd.display(
+            " GERBANG KELUAR FT  ",
+            "  UNTIRTA CILEGON   ",
+            "  PALANG TERTUTUP   ",
+            "    TERIMA KASIH    "
+        )
+        time.sleep(1.5)
+
+        # Tunggu sampai Sensor 1 benar-benar bebas sebelum siap menerima kendaraan baru
+        debounce_start = time.time()
+        while self.hw.is_vehicle_at_sensor1() and (time.time() - debounce_start < 4.0):
+            time.sleep(0.2)
+
         self.hw.lcd.display_standby()
 
     def process_dual_verification(self, initial_rfid: str = None):
@@ -336,6 +471,8 @@ class SmartParkingExitGate:
         """Loop pemantauan gerbang keluar secara real-time."""
         print("\n" + "=" * 65)
         print("  MEMULAI PEMANTAUAN GERBANG KELUAR (STANDBY DUAL-AUTH)")
+        print("  Sensor IR 1 (Sebelum Palang): Pemicu deteksi kedatangan & kamera ALPR")
+        print("  Sensor IR 2 (Setelah Palang): Pemicu penutup palang otomatis + timer")
         print("  Syarat Buka Otomatis: PLAT NOMOR + KARTU RFID KEDUANYA HARUS COCOK!")
         print("  Bypass Tamu: Tekan Push Button Manual (GPIO 27)")
         print("  Tekan 'Ctrl + C' untuk keluar.")
@@ -343,8 +480,9 @@ class SmartParkingExitGate:
 
         try:
             while True:
-                # 1. Pemicu Utama: Sensor IR mendeteksi mobil di depan palang keluar
-                if self.hw.is_vehicle_detected():
+                # 1. Pemicu Utama: Sensor IR 1 (Sebelum Palang) mendeteksi kendaraan mendekat
+                # Kamera HANYA memotret saat ada kendaraan (tidak capture terus menerus)
+                if self.hw.is_vehicle_at_sensor1():
                     self.process_dual_verification()
 
                 # 2. Pemicu Kartu: Jika pengendara men-tap RFID duluan sebelum IR
