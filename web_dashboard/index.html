@@ -1065,6 +1065,8 @@ h1,h2,h3,p{margin:0}
       '<dl class="kv">' +
       '<dt>Nama</dt><dd>' + esc(l.name) + '</dd>' +
       '<dt>Kategori</dt><dd>' + esc(titleCase(l.category)) + '</dd>' +
+      '<dt>NIM / NIP</dt><dd>' + esc(l.nim_nip || '-') + '</dd>' +
+      '<dt>Status</dt><dd>' + (l.status === 'TERDAFTAR' ? '<span class="up">&#10003; TERDAFTAR</span>' : '<span style="color:var(--orange)">&#9888; BELUM TERDAFTAR</span>') + '</dd>' +
       '<dt>Waktu</dt><dd>' + esc(fmtLongDate(l.ts)) + ' &bull; ' + fmtHMS(l.ts) + ' WIB</dd>' +
       '<dt>Arah</dt><dd><span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span></dd>' +
       '<dt>Confidence</dt><dd>' + l.conf + '%' + (l.conf < 80 ? ' <span style="color:var(--orange)">(perlu verifikasi)</span>' : '') + '</dd>' +
@@ -1595,10 +1597,10 @@ h1,h2,h3,p{margin:0}
     var rows = filteredLogs();
     if (!rows.length) { toast('Tidak ada data untuk diekspor.', 'error'); return; }
     var cell = function (v) { v = String(v); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    var lines = [['No', 'Tanggal', 'Waktu', 'Nama', 'Plat Nomor', 'Kategori', 'IN/OUT', 'Confidence (%)'].join(',')];
+    var lines = [['No', 'Tanggal', 'Waktu', 'Nama', 'Plat Nomor', 'Kategori', 'NIM/NIP', 'Status', 'IN/OUT', 'Confidence (%)'].join(',')];
     rows.forEach(function (l, i) {
       var d = l.ts;
-      lines.push([i + 1, d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()), fmtHMS(d), l.name, l.plate, l.category, l.dir, l.conf].map(cell).join(','));
+      lines.push([i + 1, d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()), fmtHMS(d), l.name, l.plate, l.category, l.nim_nip || '-', l.status || 'TERDAFTAR', l.dir, l.conf].map(cell).join(','));
     });
     var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var n = new Date();

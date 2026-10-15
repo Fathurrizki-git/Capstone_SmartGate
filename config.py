@@ -37,10 +37,13 @@ LCD_I2C_BUS = 1          # I2C Bus 1 (SDA: GPIO2 / Pin 3, SCL: GPIO3 / Pin 5)
 LCD_COLS = 20
 LCD_ROWS = 4
 
-# ── Parameter Palang Gerbang & Timing ────────────
-SERVO_OPEN_ANGLE = 90    # Sudut palang terbuka (derajat)
-SERVO_CLOSE_ANGLE = 0    # Sudut palang tertutup (derajat)
-GATE_OPEN_DURATION = 4.0 # Waktu jeda palang terbuka sebelum ditutup kembali (detik)
+# ── Parameter Palang Gerbang Keluar & Timing ─────
+GATE_MODE = "EXIT"           # Sistem Khusus Gerbang Keluar Parkir
+GATE_DIRECTION = "OUT"       # Default arah log kendaraan: OUT (Keluar)
+SERVO_OPEN_ANGLE = 90        # Sudut palang terbuka (derajat)
+SERVO_CLOSE_ANGLE = 0        # Sudut palang tertutup (derajat)
+GATE_OPEN_DURATION = 4.0     # Waktu jeda palang terbuka sebelum ditutup kembali (detik)
+RFID_WAIT_TIMEOUT = 12.0     # Batas waktu tunggu tap RFID setelah plat terbaca (detik)
 
 # ── Database (Supabase Cloud PostgreSQL) ───────────
 # Dapatkan dari: Supabase Dashboard -> Project Settings -> API

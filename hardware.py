@@ -96,12 +96,12 @@ class LCDController:
         print("+--------------------+\n")
 
     def display_standby(self):
-        """Tampilan standby gerbang."""
+        """Tampilan standby gerbang keluar."""
         self.display(
-            " SMART PARKING GATE ",
-            "    FT UNTIRTA     ",
+            " GERBANG KELUAR FT  ",
+            "  UNTIRTA CILEGON   ",
             "SCAN PLAT / TAP RFID",
-            "MOHON DEKATI GERBANG"
+            "MOHON DEKATI PALANG "
         )
 
 

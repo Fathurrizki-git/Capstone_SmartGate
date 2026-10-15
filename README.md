@@ -1,8 +1,12 @@
-# 🚗 Smart Parking Gate FT UNTIRTA (RFID + ALPR) — Capstone A7
+# 🚗 Smart Parking Exit Gate FT UNTIRTA (RFID + ALPR) — Capstone A7
 
-Sistem pemantauan dan pengendalian gerbang parkir pintar berbasis **Automatic License Plate Recognition (ALPR)** dan **RFID 13.56 MHz** yang dirancang untuk Fakultas Teknik Universitas Sultan Ageng Tirtayasa (FT UNTIRTA). 
+Sistem pemantauan dan pengendalian **gerbang KELUAR parkir pintar** berbasis verifikasi **Automatic License Plate Recognition (ALPR)** dan **RFID 13.56 MHz** yang dirancang untuk Fakultas Teknik Universitas Sultan Ageng Tirtayasa (FT UNTIRTA). 
 
-Sistem ini ditenagai oleh **Raspberry Pi 3 Model B+** dengan sistem catu daya mandiri bertenaga surya (**PLTS + Baterai 12V**) dan terintegrasi secara *real-time* ke cloud database **Supabase** (PostgreSQL) serta **Web Dashboard Monitoring**.
+Sistem ini difokuskan khusus pada **pintu keluar parkir (Exit Gate Only)** untuk memastikan keamanan kendaraan:
+- **Verifikasi Keluar Otomatis:** Kendaraan keluar diverifikasi melalui **ALPR (Kamera Plat)** dan/atau **Kartu RFID Civitas**. Jika data terdaftar dan valid, palang gerbang keluar otomatis terbuka.
+- **Verifikasi Keluar Manual:** Untuk kendaraan tamu atau yang belum terdaftar di sistem, petugas keamanan melakukan pengecekan manual dan membuka gerbang keluar via **Push Button**.
+
+Sistem ditenagai oleh **Raspberry Pi 3 Model B+** dengan catu daya mandiri bertenaga surya (**PLTS + Baterai 12V**) dan terintegrasi secara *real-time* ke cloud database **Supabase** (PostgreSQL) dengan status arah `OUT` (Keluar).
 
 ---
 
@@ -10,14 +14,14 @@ Sistem ini ditenagai oleh **Raspberry Pi 3 Model B+** dengan sistem catu daya ma
 
 | No | Komponen | Fungsi & Spesifikasi |
 |---|---|---|
-| 1 | **Raspberry Pi 3 Model B+** | Pusat pemrosesan, pembacaan sensor, inferensi API, dan kendali aktuator |
-| 2 | **Webcam USB** | Kamera penangkap foto plat nomor kendaraan saat memasuki gerbang |
-| 3 | **RFID USB 13.56 MHz** | Pembaca kartu KTM / kartu civitas akademika berbasis USB HID |
-| 4 | **Buzzer Flash AD16-22SM 12V** | Indikator suara & lampu strobo saat akses disetujui atau ditolak |
-| 5 | **Motor Servo (25kg/standard)** | Aktuator penggerak palang gerbang parkir (0° tertutup, 90° terbuka) |
-| 6 | **LCD I2C 20x4** | Layar antarmuka instruksi gerbang dan status akses pengendara |
-| 7 | **Push Button** | Tombol manual override petugas untuk membuka gerbang darurat/tamu |
-| 8 | **Sensor Infrared E18-D80NK** | Sensor deteksi kedatangan dan lewatnya kendaraan di depan gerbang |
+| 1 | **Raspberry Pi 3 Model B+** | Pusat pemrosesan, pembacaan sensor, inferensi API, dan kendali aktuator gerbang keluar |
+| 2 | **Webcam USB** | Kamera penangkap foto plat nomor kendaraan saat berada di depan palang keluar |
+| 3 | **RFID USB 13.56 MHz** | Pembaca kartu KTM / kartu civitas akademika untuk verifikasi keluar berbasis USB HID |
+| 4 | **Buzzer Flash AD16-22SM 12V** | Indikator suara & lampu strobo saat verifikasi keluar disetujui atau ditolak |
+| 5 | **Motor Servo (25kg/standard)** | Aktuator penggerak palang gerbang keluar (0° tertutup, 90° terbuka) |
+| 6 | **LCD I2C 20x4** | Layar panduan instruksi gerbang keluar dan status akses pengendara |
+| 7 | **Push Button** | Tombol manual override petugas untuk membuka palang keluar bagi tamu/belum terdaftar |
+| 8 | **Sensor Infrared E18-D80NK** | Sensor pendeteksi kedatangan kendaraan di depan gerbang keluar |
 
 ---
 
@@ -52,34 +56,34 @@ Raspberry Pi 3 Model B+ (Header GPIO 40-Pin):
 
 ---
 
-## 🔄 Alur Logika Gerbang Otomatis
+## 🔄 Alur Logika Verifikasi Ganda Gerbang Keluar (Dual-Auth Exit Gate)
+
+Sistem menggunakan **Dual-Factor Authentication (2FA)** demi keamanan kendaraan keluar:
+- **Syarat Buka Otomatis:** Kamera membaca plat nomor **DAN** pengendara men-tap kartu RFID. **Kedua data ini HARUS COCOK** pada pemilik yang sama di database `registered_vehicles`!
+- **Jika Tidak Cocok / Belum Terdaftar:** Palang keluar **tetap tertutup** dan alarm berbunyi.
+- **Buka Manual (Bypass Tamu):** Petugas keamanan memeriksa manual (karcis/STNK tamu) lalu menekan **Push Button (GPIO 27)**.
 
 ```mermaid
 flowchart TD
-    A["🚗 Kendaraan Mendekat"] --> B{"Pemicu Akses"}
-    B -->|Sensor IR Terhalang (GPIO17)| C["📸 Ambil Foto via Webcam USB"]
-    B -->|Kartu Di-tap| D["💳 Baca RFID USB 13.56 MHz"]
-    B -->|Tombol Ditekan (GPIO27)| E["🔘 Buka Manual oleh Petugas"]
+    A["🚗 Kendaraan di Gerbang Keluar"] --> B["🔴 Sensor IR Terhalang (GPIO 17)"]
+    B --> C["📸 1. Webcam USB: Baca Plat Nomor (ALPR)"]
+    C --> D["💳 2. Pengendara Tap Kartu RFID 13.56 MHz"]
 
-    C --> F["🧠 Plate Recognizer Cloud API"]
-    F --> G["🔍 Cek Database Supabase (registered_vehicles)"]
-    D --> G
+    C & D --> E["🔍 Pencocokan Ganda ke Supabase (registered_vehicles)"]
 
-    G -->|Terdaftar / Civitas Valid| H["✅ AKSES DITERIMA"]
-    H --> H1["LCD: Tampilkan Nama & Plat"]
-    H1 --> H2["Buzzer: Beep 2x Pendek"]
-    H2 --> H3["Servo: Buka Palang (90°)"]
-    H3 --> H4["Kirim Full Data ke Supabase (vehicle_logs)"]
-    H4 --> H5["Tunggu Kendaraan Melintas (Sensor IR Clear)"]
-    H5 --> H6["Servo: Tutup Palang (0°)"]
+    E -->|KEDUA DATA COCOK (Plat + RFID Sama)| F["✅ AKSES KELUAR DITERIMA"]
+    F --> F1["LCD: 'HATI-HATI DI JALAN :)' & Nama Pemilik"]
+    F1 --> F2["Buzzer: Beep 2x Pendek"]
+    F2 --> F3["Servo: Buka Palang Keluar (90°)"]
+    F3 --> F4["Kirim Full Data ke vehicle_logs (Arah: OUT)"]
+    F4 --> F5["Kendaraan Lewat (Sensor IR Clear) -> Palang Tutup"]
 
-    G -->|Tidak Terdaftar / Asing| I["❌ AKSES DITOLAK"]
-    I --> I1["LCD: 'TIDAK TERDAFTAR - HUBUNGI PETUGAS'"]
-    I1 --> I2["Buzzer: Alarm Flash Panjang"]
-    I2 --> I3["Palang Tetap Tertutup"]
-    I3 --> I4["Kirim Log Status Tidak Terdaftar ke Supabase"]
-
-    E --> H3
+    E -->|Plat & RFID BEDA / Kartu Orang Lain| G["❌ DATA TIDAK COCOK (DITOLAK)"]
+    E -->|Belum Terdaftar / Tamu| H["❌ BELUM TERDAFTAR"]
+    
+    G & H --> I["Palang Keluar TETAP TERTUTUP + Alarm Strobo"]
+    I --> J["🔘 Petugas Cek Manual & Tekan Push Button (GPIO 27)"]
+    J --> F3
 ```
 
 ---
