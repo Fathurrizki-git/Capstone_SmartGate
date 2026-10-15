@@ -26,13 +26,7 @@ import threading
 
 import config
 from plate_recognizer import PlateRecognizerAPI, draw_results
-
-# Inisialisasi Logger sesuai pilihan di config.py
-provider = getattr(config, 'DATABASE_PROVIDER', 'supabase').lower()
-if provider == 'supabase':
-    from supabase_logger import SupabaseLogger
-else:
-    from firebase_logger import FirebaseLogger
+from supabase_logger import SupabaseLogger
 
 
 class ALPRPipeline:
@@ -43,17 +37,14 @@ class ALPRPipeline:
 
     def __init__(self):
         print("=" * 50)
-        print("  ALPR System — Raspberry Pi 4")
+        print("  ALPR System - Raspberry Pi 4")
         print("  Mode: Cloud API (Plate Recognizer)")
-        print(f"  Database: {provider.upper()}")
+        print("  Database: SUPABASE (Cloud PostgreSQL)")
         print("=" * 50)
 
         # Inisialisasi API client & Database
         self.api = PlateRecognizerAPI()
-        if provider == 'supabase':
-            self.db = SupabaseLogger()
-        else:
-            self.db = FirebaseLogger()
+        self.db = SupabaseLogger()
 
         # Cek kuota API
         usage = self.api.check_usage()
@@ -103,7 +94,7 @@ class ALPRPipeline:
             results = self.process_image(image)
             if results:
                 self.current_results = results
-                # Print hasil ke console dan log ke Firebase
+                # Print hasil ke console dan log ke Supabase Cloud
                 for r in results:
                     plate_text = r.get('plate_text', '')
                     confidence = r.get('confidence', 0.0)
@@ -111,7 +102,7 @@ class ALPRPipeline:
                     
                     print(f"  >> PLAT: {plate_text} (conf: {confidence:.0%})")
                     
-                    # Log otomatis ke Firebase
+                    # Log otomatis ke Supabase
                     self.db.log_vehicle(plate_text, confidence, region)
         finally:
             # Pastikan flag direset setelah selesai atau error

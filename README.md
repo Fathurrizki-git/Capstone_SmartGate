@@ -10,7 +10,7 @@ Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recog
 - **Cloud-Based Recognition:** Menggunakan Plate Recognizer API dengan optimasi khusus format plat nomor Indonesia (`id`).
 - **Hemat Bandwidth & Asynchronous:** Pemrosesan API berjalan di latar belakang (threading) dengan frame-skipping dan interval capture yang dapat dikonfigurasi.
 - **Dukungan Kamera Fleksibel:** Mendukung USB Webcam, PiCamera, dan input citra/folder batch.
-- **Logging Real-Time ke Firebase:** Data kendaraan (plat, waktu, kategori, confidence, status masuk/keluar) otomatis tersinkronisasi ke Firebase Realtime Database.
+- **Logging Real-Time ke Supabase:** Data kendaraan (plat, waktu, nama pemilik, kategori, status terdaftar, confidence) otomatis dicocokkan dan tersinkronisasi ke Supabase PostgreSQL Cloud.
 - **Penyimpanan Anotasi:** Gambar hasil deteksi dengan bounding box dan label disimpan secara otomatis ke folder `output/`.
 
 ### 2. 📊 Web Dashboard Interaktif (`web_dashboard/`)
