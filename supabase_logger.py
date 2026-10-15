@@ -122,7 +122,7 @@ class SupabaseLogger:
                     return {
                         "matched": True,
                         "plate": item.get("plate", plate_text),
-                        "owner_name": item.get("owner_name", "Civitas Untirta"),
+                        "owner_name": item.get("owner_name") or item.get("owner") or "Civitas Untirta",
                         "category": item.get("category", "STUDENT"),
                         "nim_nip": item.get("nim_nip", "-") or "-",
                         "status": "TERDAFTAR"
@@ -136,7 +136,7 @@ class SupabaseLogger:
                     return {
                         "matched": True,
                         "plate": item.get("plate", plate_text),
-                        "owner_name": item.get("owner_name", "Civitas Untirta"),
+                        "owner_name": item.get("owner_name") or item.get("owner") or "Civitas Untirta",
                         "category": item.get("category", "STUDENT"),
                         "nim_nip": item.get("nim_nip", "-") or "-",
                         "status": "TERDAFTAR"
@@ -189,7 +189,7 @@ class SupabaseLogger:
                     return {
                         "matched": True,
                         "plate": item.get("plate", "RFID_CARD"),
-                        "owner_name": item.get("owner_name", "Civitas Untirta"),
+                        "owner_name": item.get("owner_name") or item.get("owner") or "Civitas Untirta",
                         "category": item.get("category", "STUDENT"),
                         "nim_nip": item.get("nim_nip", "-") or "-",
                         "status": "TERDAFTAR",
