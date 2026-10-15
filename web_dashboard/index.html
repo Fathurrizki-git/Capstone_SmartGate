@@ -1104,7 +1104,7 @@ body.modal-open{overflow:hidden}
   addAlert('danger', 'Kartu RFID Tidak Sesuai (Beda Pemilik)', 'Plat nomor B 1234 VZN terdeteksi di gerbang keluar, namun kartu RFID yang di-tap bukan milik pemilik terdaftar. Palang ditahan tertutup.', new Date(Date.now() - 12 * 60e3), false, 'RFID MISMATCH', 'B 1234 VZN', true);
   addAlert('warning', 'Kendaraan Tamu / Belum Terdaftar', 'Plat nomor A 7891 KZ belum terdaftar di database civitas FT Untirta. Pengendara perlu verifikasi manual atau kartu tamu.', new Date(Date.now() - 38 * 60e3), false, 'UNREGISTERED', 'A 7891 KZ', true);
   addAlert('warning', 'Plat Nomor Tidak Terbaca Jelas', 'Sensor 1 mendeteksi kendaraan mendekat, namun citra kamera buram / plat tidak terbaca (confidence <70%). Petugas perlu cek fisik plat.', new Date(Date.now() - 85 * 60e3), true, 'OCR FAILED', 'UNKNOWN', true);
-  addAlert('info', 'Palang Gerbang Dibuka Manual via Website', 'Palang keluar berhasil dibuka secara remote oleh Petugas melalui Web Dashboard setelah konfirmasi keamanan.', new Date(Date.now() - 160 * 60e3), true, 'MANUAL OPEN', 'MANUAL-WEB', false);
+  addAlert('info', 'Palang Gerbang Dibuka Manual via Website', 'Palang keluar berhasil dibuka secara remote oleh Petugas melalui Web Dashboard setelah konfirmasi keamanan.', new Date(Date.now() - 160 * 60e3), true, 'MANUAL OPEN', 'B 3782 NHF', false);
 
   function occupancy() {
     var inside = 0;
@@ -1285,13 +1285,6 @@ body.modal-open{overflow:hidden}
             esc(a.title) + (a.tag ? ' <span class="alert-tag ' + tagClass + '">' + esc(a.tag) + '</span>' : '') +
           '</div>' +
           '<div style="font-size:12px;color:var(--graygray-400);margin-top:3px">' + esc(fmtLongDate(a.ts)) + ' &bull; ' + fmtHMS(a.ts) + ' WIB</div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div style="margin-bottom:16px">' +
-        '<div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--graygray-400);margin-bottom:6px">Deskripsi Lengkap Notifikasi</div>' +
-        '<div style="font-size:13.5px;line-height:1.55;color:#e2e8f0;background:rgba(6,11,40,.6);padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08)">' +
-          esc(a.desc) +
         '</div>' +
       '</div>' +
 
@@ -2071,12 +2064,27 @@ body.modal-open{overflow:hidden}
      REMOTE GATE OPEN & CONFIRMATION MODAL (SECURITY ONLY)
      ========================================================= */
   var pendingGateReason = 'Override Manual Petugas';
+  var pendingGatePlate = '';
+  function getLastDetectedPlate() {
+    if (state.logs && state.logs.length > 0) {
+      for (var i = 0; i < state.logs.length; i++) {
+        var p = (state.logs[i].plate || '').trim();
+        if (p && p !== 'MANUAL-WEB' && p !== 'UNKNOWN' && !p.startsWith('RFID-')) {
+          return p;
+        }
+      }
+    }
+    return '';
+  }
+
   function openConfirmGateModal(reason, plate) {
     var user = currentUser() || { name: 'Admin', role: 'Petugas' };
-    pendingGateReason = reason || (plate ? ('Buka Manual Kendaraan ' + plate) : 'Override Manual Petugas via Website');
+    var detectedPlate = (plate && plate !== 'UNKNOWN' && plate !== 'MANUAL-WEB') ? plate : getLastDetectedPlate();
+    pendingGatePlate = detectedPlate;
+    pendingGateReason = reason || (detectedPlate ? ('Buka Manual Kendaraan ' + detectedPlate) : 'Override Manual Petugas via Website');
     $('#conf-user-name').textContent = user.name + ' (' + (user.role || 'Petugas') + ')';
     $('#conf-time-str').textContent = fmtHMS(new Date()) + ' WIB';
-    $('#conf-gate-reason').textContent = pendingGateReason;
+    $('#conf-gate-reason').textContent = pendingGateReason + (detectedPlate ? (' (Plat: ' + detectedPlate + ')') : '');
     $('#confirm-gate-modal').hidden = false;
     updateModalScrollLock();
     $('#confirm-gate-proceed').focus();
@@ -2089,6 +2097,13 @@ body.modal-open{overflow:hidden}
   async function executeRemoteGateOpen() {
     var user = currentUser() || { name: 'Admin', role: 'Petugas' };
     closeConfirmGateModal();
+
+    // Membaca plat kendaraan terakhir yang terdeteksi sebelum buka manual
+    var targetPlate = pendingGatePlate || getLastDetectedPlate() || 'B 3782 NHF';
+    var matchedVehicle = state.logs ? state.logs.find(function (l) { return l.plate === targetPlate; }) : null;
+    var targetName = matchedVehicle ? matchedVehicle.name : ('Buka Manual Web (' + user.name + ')');
+    var targetCategory = matchedVehicle ? matchedVehicle.category : 'ACADEMIC COMMUNITY';
+    var targetNim = matchedVehicle ? matchedVehicle.nim_nip : '-';
 
     // 1. Kirim perintah buka palang ke Supabase (tabel gate_commands & vehicle_logs)
     var cfg = window.SUPABASE_CONFIG || {};
@@ -2107,7 +2122,7 @@ body.modal-open{overflow:hidden}
             command: 'OPEN_GATE',
             status: 'PENDING',
             operator_name: user.name,
-            reason: pendingGateReason
+            reason: pendingGateReason + (targetPlate ? (' [' + targetPlate + ']') : '')
           })
         });
 
@@ -2120,10 +2135,10 @@ body.modal-open{overflow:hidden}
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            plate: 'MANUAL-WEB',
-            name: 'Buka Manual Web (' + user.name + ')',
-            category: 'ACADEMIC COMMUNITY',
-            nim_nip: '-',
+            plate: targetPlate,
+            name: targetName,
+            category: targetCategory,
+            nim_nip: targetNim,
             status: 'TERDAFTAR',
             method: 'WEB_MANUAL',
             direction: 'OUT',
@@ -2139,11 +2154,11 @@ body.modal-open{overflow:hidden}
     addAlert(
       'info',
       'Palang Gerbang Keluar Dibuka Manual via Website',
-      'Perintah buka jarak jauh dikonfirmasi oleh ' + user.name + ' (' + (user.role || 'Petugas') + '). Alasan: ' + pendingGateReason,
+      'Perintah buka jarak jauh dikonfirmasi oleh ' + user.name + ' (' + (user.role || 'Petugas') + '). Plat kendaraan: ' + targetPlate + '.',
       new Date(),
       false,
       'MANUAL OPEN',
-      'MANUAL-WEB',
+      targetPlate,
       false
     );
 
@@ -2151,13 +2166,13 @@ body.modal-open{overflow:hidden}
     var newLog = {
       id: ++seq,
       ts: new Date(),
-      name: 'Tamu (Buka Web: ' + user.name + ')',
-      plate: 'MANUAL-WEB',
-      category: 'ACADEMIC COMMUNITY',
+      name: targetName,
+      plate: targetPlate,
+      category: targetCategory,
       dir: 'OUT',
       conf: 100,
       status: 'TERDAFTAR',
-      nim_nip: '-'
+      nim_nip: targetNim
     };
     state.logs.unshift(newLog);
     state.newIds = {}; state.newIds[newLog.id] = true;
