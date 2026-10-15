@@ -442,22 +442,17 @@ h1,h2,h3,p{margin:0}
 /* camera */
 .cam{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:16/9;background:#02040f;border:1px solid rgba(255,255,255,.06)}
 .cam-sim{position:absolute;inset:0;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.03) 1px,transparent 1px) 0 0/100% 4px,
-    radial-gradient(ellipse at 50% 120%,#1d2a52 0%,#0a1028 55%,#03050f 100%)}
-.cam-sim .road{position:absolute;left:50%;bottom:0;width:70%;height:55%;transform:translateX(-50%) perspective(400px) rotateX(55deg);transform-origin:bottom;
-  background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(255,255,255,.25) 30px 50px) center/6px 100% no-repeat,#151b33}
-.cam-sim .scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(44,217,255,.8),transparent);animation:scan 3.5s linear infinite}
-@keyframes scan{from{top:0}to{top:100%}}
+  background:radial-gradient(ellipse at 50% 100%,#152042 0%,#090f26 60%,#02040f 100%)}
+.cam-sim .road,.cam-sim .scan{display:none!important}
 .cam video, .cam img.cam-stream{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 .cam-ov{position:absolute;inset:0;pointer-events:none;padding:16px;display:flex;flex-direction:column;justify-content:space-between;font-size:12px;font-weight:600;text-shadow:0 1px 2px #000}
 .cam-ov .row{display:flex;justify-content:space-between;align-items:center}
-.rec{display:inline-flex;align-items:center;gap:6px;color:#ff6b6e}
-.rec::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--red);animation:blink 1s steps(2) infinite}
+.rec{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:6px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);color:var(--graygray-400);transition:all .25s ease}
+.rec .rec-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--graygray-500)}
+.rec.live{color:#ff6b6e}
+.rec.live .rec-dot{background:var(--red);box-shadow:0 0 8px rgba(255,56,60,.75);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
-.det-box{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);border:2px solid var(--green);border-radius:6px;padding:6px 12px;
-  background:rgba(0,0,0,.55);font-size:clamp(14px,2.2vw,24px);font-weight:700;letter-spacing:2px;color:#fff;transition:opacity .3s}
-.det-box small{position:absolute;left:-2px;top:-22px;background:var(--green);color:#012;font-size:10px;padding:2px 6px;border-radius:4px 4px 0 0;letter-spacing:0;white-space:nowrap}
+.det-box{display:none!important}
 .cam-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
 .last-det{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
 
@@ -809,17 +804,16 @@ body.modal-open{overflow:hidden}
         <div class="card">
           <div class="card-head">
             <div><div class="card-title">Real-Time Camera</div><div class="card-sub">CAM-01 &bull; Gerbang Masuk FT Untirta</div></div>
-            <span class="chip" id="cam-status"><span class="live-dot" style="background:var(--green)"></span>Standby (Kamera ALPR)</span>
+            <span class="chip" id="cam-status"><span class="live-dot" style="background:var(--graygray-400)"></span>Standby (Kamera ALPR)</span>
           </div>
           <div class="cam">
-            <div class="cam-sim"><div class="road"></div><div class="scan"></div></div>
+            <div class="cam-sim"></div>
             <img id="cam-stream" class="cam-stream" alt="Live Camera ALPR" hidden>
             <video id="cam-video" playsinline muted hidden></video>
             <div class="cam-ov">
-              <div class="row"><span class="rec">REC</span><span id="cam-time">--</span></div>
+              <div class="row"><span class="rec standby" id="cam-live-indicator"><span class="rec-dot"></span>STANDBY</span><span id="cam-time">--</span></div>
               <div class="row"><span>CAM-01 &bull; GATE ENTRY</span><span>ALPR v1.0</span></div>
             </div>
-            <div class="det-box" id="det-box"><small id="det-label">IN &bull; 98%</small><span id="det-plate">-</span></div>
           </div>
           <div class="cam-actions">
             <button type="button" class="btn btn-primary" id="cam-start"><span data-icon="camera" data-size="15"></span>Gunakan Webcam</button>
@@ -1863,12 +1857,25 @@ body.modal-open{overflow:hidden}
     return 'http://localhost:5050/video_feed';
   }
 
+  function setCamIndicator(isLive) {
+    var el = $('#cam-live-indicator');
+    if (!el) return;
+    if (isLive) {
+      el.className = 'rec live';
+      el.innerHTML = '<span class="rec-dot"></span>LIVE';
+    } else {
+      el.className = 'rec standby';
+      el.innerHTML = '<span class="rec-dot"></span>STANDBY';
+    }
+  }
+
   function stopSnapshotLoop() {
     streamActive = false;
     if (streamNextTimer) {
       clearTimeout(streamNextTimer);
       streamNextTimer = null;
     }
+    setCamIndicator(false);
   }
 
   function startSnapshotLoop(baseUrl) {
@@ -1892,6 +1899,9 @@ body.modal-open{overflow:hidden}
       var timeoutId = setTimeout(function () {
         inFlight = false;
         consecutiveErrors++;
+        if (consecutiveErrors > 3) {
+          setCamIndicator(false);
+        }
         if (consecutiveErrors > 5 && $('#cam-status')) {
           $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--orange)"></span>Menghubungkan Ulang Kamera...';
         }
@@ -1909,6 +1919,8 @@ body.modal-open{overflow:hidden}
         if ($('#cam-start')) $('#cam-start').disabled = true;
         if ($('#cam-stop')) $('#cam-stop').disabled = false;
 
+        setCamIndicator(true);
+
         var isTunnel = cleanBase.includes('trycloudflare.com') || cleanBase.startsWith('https://');
         var label = isTunnel ? 'Live Kamera ALPR (Cloudflare Tunnel Terhubung)' : 'Live Kamera ALPR (Lokal Terhubung)';
         if ($('#cam-status')) {
@@ -1925,6 +1937,9 @@ body.modal-open{overflow:hidden}
         clearTimeout(timeoutId);
         inFlight = false;
         consecutiveErrors++;
+        if (consecutiveErrors > 3) {
+          setCamIndicator(false);
+        }
         if (consecutiveErrors > 5 && $('#cam-status')) {
           $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--red)"></span>Kamera Terputus / Reconnecting...';
         }
@@ -1947,8 +1962,9 @@ body.modal-open{overflow:hidden}
       isPythonStreamActive = false;
       img.hidden = true;
       img.src = '';
+      setCamIndicator(false);
       if (!camStream && $('#cam-status')) {
-        $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--blue)"></span>Standby (Klik URL Cloudflare untuk sambungkan)';
+        $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--graygray-400)"></span>Standby (Klik URL Cloudflare untuk sambungkan)';
       }
       return;
     }
@@ -1989,6 +2005,7 @@ body.modal-open{overflow:hidden}
       isPythonStreamActive = false;
       img.hidden = true;
       img.src = '';
+      setCamIndicator(false);
       if (!camStream) {
         if ($('#cam-start')) $('#cam-start').disabled = false;
         if ($('#cam-stop')) $('#cam-stop').disabled = true;
@@ -2053,9 +2070,12 @@ body.modal-open{overflow:hidden}
         $('#cam-stream').src = '';
       }
       isPythonStreamActive = false;
+      setCamIndicator(true);
+    } else {
+      setCamIndicator(isPythonStreamActive);
     }
     if ($('#cam-status')) {
-      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Live Webcam Browser Aktif' : (isPythonStreamActive ? 'Live Kamera ALPR Terhubung' : 'Standby (Kamera ALPR)'));
+      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : (isPythonStreamActive ? 'var(--green)' : 'var(--graygray-400)')) + '"></span>' + (on ? 'Live Webcam Browser Aktif' : (isPythonStreamActive ? 'Live Kamera ALPR Terhubung' : 'Standby (Kamera ALPR)'));
     }
   }
 
@@ -2129,18 +2149,10 @@ body.modal-open{overflow:hidden}
       g.addColorStop(0, '#1d2a52'); g.addColorStop(1, '#03050f');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
     }
-    var l = state.logs[0], now = new Date();
+    var now = new Date();
     ctx.font = 'bold 28px Arial'; ctx.fillStyle = '#fff';
     ctx.fillText('CAM-01 \u2022 GATE ENTRY', 30, 50);
     ctx.fillText(fmtLongDate(now) + ' ' + fmtHMS(now), 30, h - 30);
-    if (l) {
-      ctx.strokeStyle = '#01b574'; ctx.lineWidth = 4;
-      ctx.font = 'bold 56px Arial';
-      var tw = ctx.measureText(l.plate).width;
-      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(w / 2 - tw / 2 - 24, h / 2 - 50, tw + 48, 90);
-      ctx.strokeRect(w / 2 - tw / 2 - 24, h / 2 - 50, tw + 48, 90);
-      ctx.fillStyle = '#fff'; ctx.fillText(l.plate, w / 2 - tw / 2, h / 2 + 18);
-    }
     canvas.toBlob(function (blob) {
       if (!blob) { toast('Gagal membuat snapshot.', 'error'); return; }
       downloadBlob(blob, 'snapshot-' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) + '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.png');
