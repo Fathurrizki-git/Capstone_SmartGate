@@ -1,37 +1,86 @@
-# 🚗 Smart Parking Gate FT UNTIRTA — Capstone A7
+# 🚗 Smart Parking Gate FT UNTIRTA (RFID + ALPR) — Capstone A7
 
-Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recognition (ALPR)** yang dirancang untuk Fakultas Teknik Universitas Sultan Ageng Tirtayasa (FT UNTIRTA). Proyek ini memadukan penangkapan citra plat nomor melalui kamera Raspberry Pi 3 Model B+, inferensi cloud AI menggunakan Plate Recognizer API, pencatatan realtime di Supabase, dan antarmuka pemantauan **Web Dashboard Interaktif**.
+Sistem pemantauan dan pengendalian gerbang parkir pintar berbasis **Automatic License Plate Recognition (ALPR)** dan **RFID 13.56 MHz** yang dirancang untuk Fakultas Teknik Universitas Sultan Ageng Tirtayasa (FT UNTIRTA). 
+
+Sistem ini ditenagai oleh **Raspberry Pi 3 Model B+** dengan sistem catu daya mandiri bertenaga surya (**PLTS + Baterai 12V**) dan terintegrasi secara *real-time* ke cloud database **Supabase** (PostgreSQL) serta **Web Dashboard Monitoring**.
 
 ---
 
-## 📌 Fitur Utama
+## 📌 Daftar 8 Komponen Sistem
 
-### 1. 🔍 ALPR Pipeline (`main.py`)
-- **Cloud-Based Recognition:** Menggunakan Plate Recognizer API dengan optimasi khusus format plat nomor Indonesia (`id`).
-- **Hemat Bandwidth & Asynchronous:** Pemrosesan API berjalan di latar belakang (threading) dengan frame-skipping dan interval capture yang dapat dikonfigurasi.
-- **Dukungan Kamera Fleksibel:** Mendukung USB Webcam, PiCamera, dan input citra/folder batch.
-- **Logging Real-Time ke Supabase:** Data kendaraan (plat, waktu, nama pemilik, kategori, status terdaftar, confidence) otomatis dicocokkan dan tersinkronisasi ke Supabase PostgreSQL Cloud.
-- **Penyimpanan Anotasi:** Gambar hasil deteksi dengan bounding box dan label disimpan secara otomatis ke folder `output/`.
+| No | Komponen | Fungsi & Spesifikasi |
+|---|---|---|
+| 1 | **Raspberry Pi 3 Model B+** | Pusat pemrosesan, pembacaan sensor, inferensi API, dan kendali aktuator |
+| 2 | **Webcam USB** | Kamera penangkap foto plat nomor kendaraan saat memasuki gerbang |
+| 3 | **RFID USB 13.56 MHz** | Pembaca kartu KTM / kartu civitas akademika berbasis USB HID |
+| 4 | **Buzzer Flash AD16-22SM 12V** | Indikator suara & lampu strobo saat akses disetujui atau ditolak |
+| 5 | **Motor Servo (25kg/standard)** | Aktuator penggerak palang gerbang parkir (0° tertutup, 90° terbuka) |
+| 6 | **LCD I2C 20x4** | Layar antarmuka instruksi gerbang dan status akses pengendara |
+| 7 | **Push Button** | Tombol manual override petugas untuk membuka gerbang darurat/tamu |
+| 8 | **Sensor Infrared E18-D80NK** | Sensor deteksi kedatangan dan lewatnya kendaraan di depan gerbang |
 
-### 2. 📊 Web Dashboard Interaktif (`web_dashboard/`)
-- **Single Page Application (SPA):** Menggabungkan seluruh halaman menjadi satu aplikasi tanpa reload dengan hash-based routing (`#/dashboard`, `#/trendline`, `#/vehicle-log`, `#/security`, `#/login`).
-- **Real-Time Simulation:** Mode simulasi kendaraan live (interval 6 detik) untuk uji coba tanpa kamera fisik.
-- **Kapasitas Parkir & Pengukur Gauge:** Visualisasi kapasitas terisi, slot kosong, dan persentase kapasitas parkir FT Untirta.
-- **Trendline & Analisis Per Jam:** Grafik SVG interaktif dengan tooltip yang menampilkan volume kendaraan masuk vs keluar per jam.
-- **Vehicle Log Terintegrasi:**
-  - Pencarian nomor plat & nama pengendara secara live.
-  - Filter kategori (Student, Lecturer, Academic Community) & arah (IN/OUT).
-  - Multi-column sorting (Waktu, Plat, Kategori, Confidence).
-  - Paginasi dinamis dan modal detail kendaraan.
-  - **Ekspor CSV:** Unduh log kendaraan harian langsung dalam format CSV.
-- **Security Notification & Real-Time Camera:**
-  - Monitoring notifikasi otomatis jika kapasitas hampir penuh atau confidence pembacaan plat rendah (<80%).
-  - Dukungan streaming webcam langsung di browser dengan tombol snapshot kamera.
-- **Desain Modern Vision UI & Identitas Untirta:**
-  - Tema gelap futuristik dengan Glassmorphism (Vision UI).
-  - Logo resmi FT UNTIRTA dan maskot **Crodas Untirta** pada card selamat datang.
-- **Zoom-Resilient & Responsif:**
-  - Halaman login didesain fluid menggunakan `max(px, vw)` sehingga tetap tajam, proporsional, dan nyaman digunakan baik pada zoom out ekstrem (25%) maupun zoom in (200%+).
+---
+
+## 🔌 Diagram Pinout & Wiring (Raspberry Pi 3 Model B+)
+
+Sesuai dengan skema wiring kelistrikan sistem:
+
+```text
+Raspberry Pi 3 Model B+ (Header GPIO 40-Pin):
+   Pin 2  (5V)          ------> VCC LCD I2C 20x4
+   Pin 4  (5V)          ------> VCC Sensor Infrared E18-D80NK
+   Pin 6  (GND)         ------> GND LCD I2C 20x4
+   Pin 9  (GND)         ------> GND Sensor Infrared
+   Pin 14 (GND)         ------> GND Push Button Manual
+   Pin 3  (GPIO 2 / SDA) ------> SDA LCD I2C 20x4
+   Pin 5  (GPIO 3 / SCL) ------> SCL LCD I2C 20x4
+   Pin 11 (GPIO 17)     ------> OUT Sensor Infrared E18-D80NK (Active LOW)
+   Pin 12 (GPIO 18)     ------> Signal Motor Servo Palang (Hardware PWM0)
+   Pin 13 (GPIO 27)     ------> Signal Push Button Manual (Active LOW, Pull-Up)
+   Pin 15 (GPIO 22)     ------> Base Transistor NPN (Driver Buzzer Flash 12V)
+   Port USB 1           ------> Webcam USB
+   Port USB 2           ------> RFID USB 13.56 MHz Reader
+```
+
+### ⚡ Arsitektur Catu Daya (Solar PLTS & Buck Converter)
+* **Panel Surya (PLTS)** terhubung ke **Solar Charge Controller (SCC MPPT 12V 10A)**.
+* **Baterai 12V (20.000 mAh)** terhubung ke port baterai SCC MPPT.
+* **Jalur Output LOAD SCC (12V):**
+  - **Buck Converter A (Step-down 12V ke 5V):** Menyuplai daya ke Raspberry Pi 3 Model B+ melalui port Micro-USB.
+  - **Buck Converter B (Step-down 12V ke 5V):** Menyuplai daya arus tinggi ke Motor Servo (GND terhubung ke common GND).
+  - **Jalur Langsung 12V:** Menyuplai daya ke Buzzer Flash AD16-22SM 12V melalui *switching* transistor NPN yang dipicu oleh GPIO 22.
+
+---
+
+## 🔄 Alur Logika Gerbang Otomatis
+
+```mermaid
+flowchart TD
+    A["🚗 Kendaraan Mendekat"] --> B{"Pemicu Akses"}
+    B -->|Sensor IR Terhalang (GPIO17)| C["📸 Ambil Foto via Webcam USB"]
+    B -->|Kartu Di-tap| D["💳 Baca RFID USB 13.56 MHz"]
+    B -->|Tombol Ditekan (GPIO27)| E["🔘 Buka Manual oleh Petugas"]
+
+    C --> F["🧠 Plate Recognizer Cloud API"]
+    F --> G["🔍 Cek Database Supabase (registered_vehicles)"]
+    D --> G
+
+    G -->|Terdaftar / Civitas Valid| H["✅ AKSES DITERIMA"]
+    H --> H1["LCD: Tampilkan Nama & Plat"]
+    H1 --> H2["Buzzer: Beep 2x Pendek"]
+    H2 --> H3["Servo: Buka Palang (90°)"]
+    H3 --> H4["Kirim Full Data ke Supabase (vehicle_logs)"]
+    H4 --> H5["Tunggu Kendaraan Melintas (Sensor IR Clear)"]
+    H5 --> H6["Servo: Tutup Palang (0°)"]
+
+    G -->|Tidak Terdaftar / Asing| I["❌ AKSES DITOLAK"]
+    I --> I1["LCD: 'TIDAK TERDAFTAR - HUBUNGI PETUGAS'"]
+    I1 --> I2["Buzzer: Alarm Flash Panjang"]
+    I2 --> I3["Palang Tetap Tertutup"]
+    I3 --> I4["Kirim Log Status Tidak Terdaftar ke Supabase"]
+
+    E --> H3
+```
 
 ---
 
@@ -39,146 +88,96 @@ Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recog
 
 ```text
 ALPR/
-├── config.py                  # Konfigurasi token API, kamera, interval, dan Supabase
-├── supabase_logger.py         # Modul integrasi Supabase REST API & auto vehicle matching
-├── manage_users.py            # CLI Tool pengelola akun pengguna di Supabase
-├── manage_vehicles.py         # CLI Tool pengelola kendaraan terdaftar & viewer log
-├── plate_recognizer.py        # Client HTTP API Plate Recognizer & anotasi OpenCV
-├── main.py                    # Script eksekusi utama ALPR pipeline
-├── schema.sql                 # Skema tabel Supabase (users, registered_vehicles, vehicle_logs)
-├── requirements-pc.txt        # Dependensi Python untuk PC/Laptop
-├── requirements-rpi.txt       # Dependensi Python untuk Raspberry Pi 4
-├── test.jpg                   # Gambar contoh untuk pengujian
-├── output/                    # Direktori penyimpanan hasil deteksi ALPR
-└── web_dashboard/             # Antarmuka Web Dashboard
-    ├── index.html             # Aplikasi utama (SPA Terpadu dengan Router & UI Lengkap)
-    ├── supabase_config.js     # Konfigurasi Supabase untuk Web Dashboard
-    ├── Dashboard.html         # Halaman Dashboard individual
-    ├── Trendline.html         # Halaman Trendline individual
-    ├── VehicleLog.html        # Halaman Log Kendaraan individual
-    ├── SecurityPage.html      # Halaman Notifikasi Keamanan & Kamera
-    ├── LoginPage.html         # Halaman Login individual (Zoom-Resilient)
-    └── img/                   # Aset gambar & ikon
-        ├── LOGO-UNTIRTA-1.png # Logo resmi FT Untirta
-        ├── Crodas-1.png       # Maskot Crodas Untirta
-        ├── image-1.png        # Foto Gedung FT Untirta
-        ├── Background.png     # Background UI
-        ├── chart.svg          # Ikon navigasi Trendline
-        ├── circle.svg         # Ikon status Vehicle Log
-        └── ...
+├── config.py             # Konfigurasi Pin GPIO RPi 3B+, kamera USB, dan Supabase
+├── hardware.py           # Driver kontrol LCD 20x4, Servo, Buzzer, IR Sensor, Button, RFID
+├── main.py               # Program utama otomasi palang parkir RPi 3B+
+├── plate_recognizer.py   # Client REST API Plate Recognizer & anotasi citra OpenCV
+├── supabase_logger.py    # Modul sinkronisasi database Supabase & pencocokan plat/RFID
+├── manage_vehicles.py    # CLI pengelolaan kendaraan & kartu RFID terdaftar di Supabase
+├── manage_users.py       # CLI pengelolaan akun petugas gerbang & admin di Supabase
+├── schema.sql            # Skema tabel database Supabase (SQL Editor)
+├── requirements-rpi.txt  # Dependensi Python untuk Raspberry Pi 3 Model B+
+├── requirements-pc.txt   # Dependensi Python untuk simulasi di PC/Laptop
+├── output/               # Folder penyimpanan citra deteksi gerbang
+└── web_dashboard/        # Web Dashboard Monitoring Petugas
+    ├── index.html        # Dashboard interaktif SPA (Vehicle Log, Trendline, Security)
+    ├── supabase_config.js# Konfigurasi koneksi Supabase Web
+    └── img/              # Aset logo Untirta & Crodas
 ```
 
 ---
 
-## 🚀 Panduan Menjalankan Sistem
+## 🚀 Panduan Instalasi & Menjalankan pada Raspberry Pi 3 Model B+
 
-### A. Menjalankan Python ALPR Pipeline
-
-#### 1. Instalasi Dependensi
-Untuk PC / Laptop (Windows/Linux/macOS):
+### 1. Aktifkan Antarmuka I2C di Raspberry Pi OS
+Pastikan fitur I2C aktif agar LCD 20x4 dapat terbaca:
 ```bash
-pip install -r requirements-pc.txt
+sudo raspi-config
+# Pilih: Interface Options -> I2C -> Enable -> Finish
 ```
-Untuk Raspberry Pi 4 (Raspberry Pi OS):
+
+Periksa alamat I2C LCD (umumnya `0x27`):
 ```bash
+sudo apt-get install -y i2c-tools
+sudo i2cdetect -y 1
+```
+
+### 2. Instalasi Dependensi Python
+```bash
+cd ALPR
 pip install -r requirements-rpi.txt
 ```
 
-#### 2. Konfigurasi Kredensial
-Buka file `config.py` dan sesuaikan parameter Supabase Anda:
+### 3. Konfigurasi Kredensial Supabase & Token API
+Buka file `config.py` dan sesuaikan token Plate Recognizer serta kredensial Supabase Anda:
 ```python
 API_TOKEN = "token_platerecognizer_anda"
-
-# Database: Supabase (PostgreSQL Cloud)
-DATABASE_PROVIDER = "supabase"
 SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
 SUPABASE_KEY = "YOUR_SUPABASE_ANON_OR_SERVICE_KEY"
-
-CAMERA_INDEX = 0  # 0 untuk webcam bawaan, 1 untuk USB webcam eksternal
 ```
 
-#### 3. Setup Tabel Database di Supabase
-1. Masuk ke Dashboard Supabase Anda, lalu buka **SQL Editor**.
-2. Buka file [schema.sql](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/schema.sql) di proyek ini, salin seluruh kodenya, lalu klik **Run**.
-3. Tabel `users`, `registered_vehicles`, dan `vehicle_logs` akan langsung terbuat lengkap dengan data awal & RLS policy.
+### 4. Setup Database di Supabase
+1. Buka Dashboard Supabase Anda, masuk ke **SQL Editor**.
+2. Salin isi file [schema.sql](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/schema.sql) dan klik **Run**.
 
-#### 4. Mengelola User (Tambah / Hapus / Lihat)
-Gunakan script CLI [manage_users.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/manage_users.py):
+### 5. Mengelola Data Civitas (Plat & RFID)
+Gunakan CLI [manage_vehicles.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/manage_vehicles.py):
 ```bash
-# Melihat daftar user di Supabase:
-python manage_users.py --list
-
-# Menambah user baru secara interaktif:
-python manage_users.py --add
-
-# Menghapus user:
-python manage_users.py --delete email@untirta.ac.id
-```
-
-#### 5. Mengelola Kendaraan Terdaftar & Cek Log
-Gunakan script CLI [manage_vehicles.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/manage_vehicles.py):
-```bash
-# Melihat daftar kendaraan civitas yang terdaftar:
+# Melihat daftar kendaraan & RFID terdaftar:
 python manage_vehicles.py --list
 
-# Mendaftarkan plat civitas baru:
-python manage_vehicles.py --add --plate "A 1234 BC" --name "Ahmad Zaki" --category "STUDENT" --nim "3332210001"
+# Mendaftarkan civitas baru (Plat + RFID):
+python manage_vehicles.py --add --plate "A 1234 BC" --name "Ahmad Zaki" --category "STUDENT" --nim "3332210001" --rfid "0001234567"
 
-# Menghapus kendaraan terdaftar:
-python manage_vehicles.py --delete "A 1234 BC"
-
-# Melihat riwayat log deteksi gerbang terbaru:
+# Melihat log deteksi gerbang terbaru:
 python manage_vehicles.py --logs
 ```
 
-#### 6. Menjalankan Deteksi Gerbang
-* **Mode Kamera Otomatis (Live Deploy):**
-  ```bash
-  python main.py --camera
-  ```
-* **Mode Kamera Manual (Tekan [Spasi] untuk menangkap gambar):**
-  ```bash
-  python main.py --camera --manual
-  ```
-* **Mode Gambar Tunggal:**
-  ```bash
-  python main.py --image test.jpg
-  ```
-* **Mode Folder (Batch):**
-  ```bash
-  python main.py --folder path/ke/folder/
-  ```
+### 6. Menjalankan Sistem Gerbang
+Jalankan program utama:
+```bash
+python main.py
+```
+
+*Untuk uji coba preview Webcam USB:*
+```bash
+python main.py --test-cam
+```
 
 ---
 
-### B. Menjalankan Web Dashboard
+## 💻 Menjalankan Web Dashboard Petugas
 
 1. Buka folder `web_dashboard/`.
-2. Buka file `index.html` langsung menggunakan browser modern (Google Chrome, Microsoft Edge, Firefox, atau Safari).
-3. Anda juga dapat menjalankannya melalui server lokal sederhana:
+2. Buka `index.html` langsung di browser, atau jalankan web server:
    ```bash
    cd web_dashboard
    python -m http.server 8080
    ```
-   Lalu buka browser di `http://localhost:8080`.
-
-#### 🔑 Akun Demo Login:
-* **Email:** `admin@untirta.ac.id`
-* **Password:** `admin123`
+3. Akses via browser: `http://<IP-Raspberry-Pi>:8080`
+   - **Login Demo:** `admin@untirta.ac.id` | Password: `admin123`
 
 ---
 
-## 🛠️ Teknologi yang Digunakan
-
-* **Backend / Edge Device:** Python 3.9+, OpenCV, NumPy, Requests, Threading.
-* **Computer Vision / AI:** [Plate Recognizer Snapshot API](https://platerecognizer.com/) (OCR Plat Nomor Kendaraan Indonesia).
-* **Cloud Database:** Supabase (PostgreSQL Cloud REST API HTTPS — 100% tanpa MQTT).
-* **Frontend Web:** HTML5, CSS3 Modern (CSS Grid, Flexbox, Fluid Clamping, Glassmorphism, CSS Custom Properties), Vanilla JavaScript ES6+ (No heavy framework dependencies, ringan dan cepat).
-* **Font:** Plus Jakarta Sans (Google Fonts).
-
----
-
-## 👥 Tim Pengembang
-
+## 👥 Pengembang
 * **Tim Capstone A7** — Fakultas Teknik, Universitas Sultan Ageng Tirtayasa (UNTIRTA).
-* **Tahun:** 2026

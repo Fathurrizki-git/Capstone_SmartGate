@@ -1,380 +1,356 @@
 """
-Main ALPR Pipeline — Raspberry Pi 4
-Konsep: RPi menangkap gambar → kirim ke Plate Recognizer API → terima hasil.
+Sistem Smart Parking Gate FT UNTIRTA (RFID + ALPR)
+Platform: Raspberry Pi 3 Model B+
 
-Usage:
-    # Mode gambar tunggal
-    python main.py --image foto_mobil.jpg
+Komponen Terintegrasi:
+  1. Raspberry Pi 3 Model B+ (Pusat Kontrol)
+  2. Webcam USB (Perekam Plat Kendaraan)
+  3. RFID USB 13.56 MHz (Pembaca Kartu Civitas)
+  4. Buzzer Flash AD16-22SM 12V (GPIO22 - Pin 15)
+  5. Motor Servo Palang (GPIO18 - Pin 12)
+  6. LCD I2C 20x4 (SDA: GPIO2 / Pin 3, SCL: GPIO3 / Pin 5)
+  7. Push Button Manual (GPIO27 - Pin 13)
+  8. Sensor Infrared E18-D80NK (GPIO17 - Pin 11)
 
-    # Mode kamera DEPLOY (Otomatis berdasarkan interval)
-    python main.py --camera
-
-    # Mode kamera TEST (Manual tekan Spasi)
-    python main.py --camera --manual
-
-    # Mode folder (batch processing)
-    python main.py --folder images/
+Penggunaan:
+  python main.py             # Menjalankan sistem gerbang otomatis
+  python main.py --test-cam  # Uji coba preview webcam USB
+  python main.py --image test.jpg # Uji coba deteksi dari file gambar
 """
 
-import argparse
 import os
+import sys
 import time
+import argparse
 import cv2
 import numpy as np
-from datetime import datetime
-import threading
 
 import config
+from hardware import HardwareManager
 from plate_recognizer import PlateRecognizerAPI, draw_results
 from supabase_logger import SupabaseLogger
 
 
-class ALPRPipeline:
-    """
-    Pipeline ALPR berbasis Cloud API.
-    RPi hanya menangkap gambar → Plate Recognizer API melakukan recognition.
-    """
-
+class SmartParkingGate:
     def __init__(self):
-        print("=" * 50)
-        print("  ALPR System - Raspberry Pi 4")
-        print("  Mode: Cloud API (Plate Recognizer)")
-        print("  Database: SUPABASE (Cloud PostgreSQL)")
-        print("=" * 50)
+        print("=" * 60)
+        print("  SMART PARKING GATE FT UNTIRTA (RFID + ALPR)")
+        print("  Hardware: Raspberry Pi 3 Model B+")
+        print("  Cloud Database: SUPABASE (PostgreSQL Cloud)")
+        print("=" * 60)
 
-        # Inisialisasi API client & Database
-        self.api = PlateRecognizerAPI()
+        # 1. Inisialisasi Hardware (LCD, Buzzer, Servo, Sensor IR, Button, RFID)
+        self.hw = HardwareManager()
+
+        # 2. Inisialisasi Cloud Logger & Plate Recognizer API
         self.db = SupabaseLogger()
+        self.api = PlateRecognizerAPI()
 
-        # Cek kuota API
-        usage = self.api.check_usage()
-        if usage["remaining"] >= 0:
-            print(f"[INFO] API Quota: {usage['remaining']}/{usage['max_calls']} remaining")
-        else:
-            print("[WARN] Tidak bisa cek kuota API")
+        # 3. Inisialisasi Kamera USB
+        self.cap = None
+        self._init_camera()
 
-        # Buat folder output
+        # Pastikan folder output ada jika opsi simpan aktif
         if config.SAVE_RESULTS:
             os.makedirs(config.OUTPUT_DIR, exist_ok=True)
 
-        self.last_api_call = 0        # Timestamp API call terakhir
-        self.is_api_processing = False # Status apakah thread API sedang jalan
-        self.current_results = []      # Cache hasil terakhir untuk ditampilkan
-        
-        print("[OK] System ready!\n")
+        # Tampilkan ucapan selamat datang di LCD
+        self.hw.lcd.display(
+            " SMART PARKING GATE ",
+            "    FT UNTIRTA     ",
+            "SISTEM SIAP AKTIF...",
+            "PALANG TERTUTUP (0*)"
+        )
+        self.hw.close_gate()
+        self.hw.buzzer_beep(0.15, 1)
+        time.sleep(1.5)
+        self.hw.lcd.display_standby()
 
-    def process_image(self, image: np.ndarray) -> list:
-        """
-        Proses satu gambar: kirim ke API → terima hasil.
-        (Berjalan sinkron, blocking)
-        """
-        start_time = time.time()
+        print("[OK] Seluruh sistem siap beroperasi!\n")
+
+    def _init_camera(self):
+        """Buka koneksi Webcam USB."""
+        print(f"[INFO] Membuka Webcam USB index {config.CAMERA_INDEX}...")
+        self.cap = cv2.VideoCapture(config.CAMERA_INDEX)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAMERA_WIDTH)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAMERA_HEIGHT)
+
+        if not self.cap.isOpened():
+            print("[WARN] Webcam USB belum terdeteksi. Silakan periksa port USB.")
+        else:
+            print("[OK] Webcam USB terhubung dan siap.")
+
+    def capture_frame(self):
+        """Ambil 1 frame citra jernih dari webcam USB."""
+        if not self.cap or not self.cap.isOpened():
+            self._init_camera()
+            if not self.cap or not self.cap.isOpened():
+                return None
+
+        # Buang 2 frame awal untuk auto-exposure / white-balance kamera USB
+        for _ in range(2):
+            self.cap.read()
+
+        ret, frame = self.cap.read()
+        if ret and frame is not None:
+            return frame
+        return None
+
+    def handle_access_granted(self, info: dict, method: str = "ALPR"):
+        """Aksi saat akses diterima (Civitas Terdaftar)."""
+        plate = info.get("plate", "-")
+        owner = info.get("owner_name", "Civitas")
+        cat = info.get("category", "STUDENT")
+        nim = info.get("nim_nip", "-")
+
+        print(f"\n>>> [AKSES DITERIMA \u2705] {owner} ({cat}) - Plat: {plate} [{method}]")
+
+        # 1. Update LCD 20x4
+        self.hw.lcd.display(
+            "*** AKSES DITERIMA ***",
+            f"{plate} ({cat[:7]})",
+            f"{owner[:20]}",
+            "SILAKAN MASUK :)"
+        )
+
+        # 2. Bunyikan Buzzer 2x pendek (Akses Disetujui)
+        self.hw.buzzer_beep(0.12, 2)
+
+        # 3. Buka Palang Gerbang (Servo 90 Derajat)
+        self.hw.open_gate()
+
+        # 4. Kirim Data Lengkap ke Supabase (vehicle_logs)
+        self.db.log_vehicle(
+            plate_text=plate,
+            confidence=info.get("confidence", 95.0),
+            direction="IN",
+            method=method,
+            custom_info=info
+        )
+
+        # 5. Keamanan: Tunggu kendaraan melintas melewati sensor IR
+        print(f"  [HOLD] Palang terbuka selama {config.GATE_OPEN_DURATION} detik...")
+        time.sleep(config.GATE_OPEN_DURATION)
+        self.hw.wait_for_vehicle_clear(timeout=6.0)
+
+        # 6. Tutup Palang Kembali (Servo 0 Derajat)
+        self.hw.close_gate()
+        time.sleep(1.0)
+        self.hw.lcd.display_standby()
+
+    def handle_access_denied(self, info: dict, method: str = "ALPR"):
+        """Aksi saat akses ditolak (Kendaraan Asing / Belum Terdaftar)."""
+        plate = info.get("plate", "TIDAK DIKENAL")
+        print(f"\n>>> [AKSES DITOLAK \u26a0\ufe0f] Plat: {plate} - Belum Terdaftar [{method}]")
+
+        # 1. Update LCD 20x4
+        self.hw.lcd.display(
+            "*** AKSES DITOLAK ***",
+            f"{plate[:20]}",
+            "TIDAK TERDAFTAR",
+            "MOHON LAPOR PETUGAS"
+        )
+
+        # 2. Bunyikan Alarm Buzzer Flash Panjang
+        self.hw.buzzer_alert()
+
+        # 3. Palang TETAP TERTUTUP (Servo 0 Derajat)
+        self.hw.close_gate()
+
+        # 4. Catat ke Supabase (Status: TIDAK TERDAFTAR)
+        self.db.log_vehicle(
+            plate_text=plate,
+            confidence=info.get("confidence", 80.0),
+            direction="IN",
+            method=method,
+            custom_info=info
+        )
+
+        time.sleep(3.0)
+        self.hw.lcd.display_standby()
+
+    def handle_manual_override(self):
+        """Buka gerbang secara manual via Push Button oleh petugas."""
+        print("\n>>> [MANUAL] Push Button ditekan! Membuka gerbang...")
+        self.hw.lcd.display(
+            "** MANUAL OVERRIDE **",
+            "TOMBOL PETUGAS AKTIF",
+            "PALANG GERBANG BUKA ",
+            "SILAKAN MELINTAS..."
+        )
+        self.hw.buzzer_beep(0.2, 1)
+        self.hw.open_gate()
+
+        # Catat log manual ke Supabase
+        manual_info = {
+            "matched": True,
+            "plate": "MANUAL-GATE",
+            "owner_name": "Petugas Gerbang",
+            "category": "ACADEMIC COMMUNITY",
+            "nim_nip": "-",
+            "status": "TERDAFTAR",
+            "confidence": 100.0
+        }
+        self.db.log_vehicle(
+            plate_text="MANUAL-GATE",
+            confidence=100.0,
+            direction="IN",
+            method="MANUAL",
+            custom_info=manual_info
+        )
+
+        time.sleep(config.GATE_OPEN_DURATION)
+        self.hw.wait_for_vehicle_clear(timeout=6.0)
+        self.hw.close_gate()
+        time.sleep(1.0)
+        self.hw.lcd.display_standby()
+
+    def process_alpr_trigger(self):
+        """Proses pembacaan plat saat Sensor IR mendeteksi kendaraan."""
+        print("\n[SENSOR IR] Kendaraan terdeteksi di depan gerbang!")
+        self.hw.lcd.display(
+            "KENDARAAN TERDETEKSI",
+            "MENGAMBIL FOTO...",
+            "MEMPROSES PLAT...",
+            "MOHON TUNGGU..."
+        )
+        self.hw.buzzer_beep(0.08, 1)
+
+        # Tangkap citra dari webcam USB
+        frame = self.capture_frame()
+        if frame is None:
+            print("[ERROR] Gagal mengambil gambar dari webcam!")
+            self.hw.lcd.display(
+                "  GAGAL AMBIL FOTO  ",
+                "PERIKSA WEBCAM USB",
+                "ATAU TAP KARTU RFID",
+                "HUBUNGI PETUGAS"
+            )
+            time.sleep(2.0)
+            self.hw.lcd.display_standby()
+            return
 
         # Kirim ke Plate Recognizer API
-        api_result = self.api.recognize(image)
-        self.last_api_call = time.time()
-
-        if not api_result["success"]:
-            print(f"  [ERROR] {api_result['error']}")
-            return []
-
-        results = api_result["results"]
-        elapsed = time.time() - start_time
-
-        print(f"[INFO] Processed in {elapsed:.2f}s — "
-              f"Found {len(results)} plate(s)")
-
-        return results
-
-    def _async_recognize(self, image: np.ndarray):
-        """
-        Jalankan API di thread terpisah (background) agar kamera tidak lag.
-        """
-        try:
-            results = self.process_image(image)
-            if results:
-                self.current_results = results
-                # Print hasil ke console dan log ke Supabase Cloud
-                for r in results:
-                    plate_text = r.get('plate_text', '')
-                    confidence = r.get('confidence', 0.0)
-                    region = r.get('region', {}).get('code', '')
-                    
-                    print(f"  >> PLAT: {plate_text} (conf: {confidence:.0%})")
-                    
-                    # Log otomatis ke Supabase
-                    self.db.log_vehicle(plate_text, confidence, region)
-        finally:
-            # Pastikan flag direset setelah selesai atau error
-            self.is_api_processing = False
-
-    def run_on_image(self, image_path: str):
-        """Proses satu file gambar."""
-        print(f"\n[INPUT] {image_path}")
-
-        image = cv2.imread(image_path)
-        if image is None:
-            print(f"[ERROR] Gagal membaca gambar: {image_path}")
+        api_res = self.api.recognize(frame)
+        if not api_res.get("success") or not api_res.get("results"):
+            print("  [--] Tidak ada plat nomor terdeteksi pada citra.")
+            self.hw.lcd.display(
+                "PLAT TIDAK TERBACA ",
+                "DEKATKAN KENDARAAN ",
+                "ATAU TAP KARTU RFID",
+                "TEKAN TOMBOL MANUAL"
+            )
+            time.sleep(2.5)
+            self.hw.lcd.display_standby()
             return
 
-        results = self.process_image(image)
-        self._display_results(results)
+        # Ambil hasil pembacaan plat pertama
+        best = api_res["results"][0]
+        plate_text = best.get("plate_text", "")
+        conf = best.get("confidence", 0.0)
 
-        # Log hasil ke Supabase / Database
-        for r in results:
-            plate_text = r.get('plate_text', '')
-            confidence = r.get('confidence', 0.0)
-            region = r.get('region', {}).get('code', '')
-            self.db.log_vehicle(plate_text, confidence, region)
-
-        # Gambar anotasi
-        annotated = draw_results(image, results)
-
-        # Simpan hasil
+        # Simpan hasil foto jika diatur
         if config.SAVE_RESULTS:
-            self._save_results(image_path, annotated, results)
+            annotated = draw_results(frame, [best])
+            fname = os.path.join(config.OUTPUT_DIR, f"gate_{int(time.time())}.jpg")
+            cv2.imwrite(fname, annotated)
 
-        # Preview
-        if config.SHOW_PREVIEW:
-            cv2.imshow("ALPR Result", annotated)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+        # Cocokkan ke tabel registered_vehicles di Supabase
+        vehicle_info = self.db.lookup_vehicle(plate_text)
+        vehicle_info["confidence"] = conf
 
-    def run_on_folder(self, folder_path: str):
-        """Batch processing untuk folder gambar."""
-        extensions = (".jpg", ".jpeg", ".png", ".bmp")
-        files = [
-            f for f in os.listdir(folder_path)
-            if f.lower().endswith(extensions)
-        ]
-
-        if not files:
-            print(f"[ERROR] Tidak ada gambar di: {folder_path}")
-            return
-
-        print(f"\n[INFO] Processing {len(files)} gambar dari: {folder_path}")
-        all_results = []
-
-        for i, fname in enumerate(sorted(files), 1):
-            print(f"\n--- [{i}/{len(files)}] ---")
-            fpath = os.path.join(folder_path, fname)
-
-            image = cv2.imread(fpath)
-            if image is None:
-                continue
-
-            results = self.process_image(image)
-            self._display_results(results)
-
-            for r in results:
-                plate_text = r.get('plate_text', '')
-                confidence = r.get('confidence', 0.0)
-                region = r.get('region', {}).get('code', '')
-                self.db.log_vehicle(plate_text, confidence, region)
-                r["source_file"] = fname
-            all_results.extend(results)
-
-            # Simpan gambar dengan anotasi
-            if config.SAVE_RESULTS:
-                annotated = draw_results(image, results)
-                self._save_results(fpath, annotated, results)
-
-        # Ringkasan
-        print(f"\n{'=' * 50}")
-        print(f"  RINGKASAN: {len(all_results)} plat dari {len(files)} gambar")
-        print(f"{'=' * 50}")
-        for r in all_results:
-            print(f"  ✓ {r['plate_text']:<15} "
-                  f"(conf: {r['confidence']:.0%}) "
-                  f"— {r.get('source_file', '')}")
-
-    def run_camera(self, is_manual=False):
-        """Mode real-time dari kamera dengan Multithreading."""
-        print("\n[INFO] Starting camera...")
-
-        if config.USE_PICAMERA:
-            cap = self._init_picamera()
+        if vehicle_info["matched"]:
+            self.handle_access_granted(vehicle_info, method="ALPR")
         else:
-            cap = cv2.VideoCapture(config.CAMERA_INDEX)
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAMERA_WIDTH)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAMERA_HEIGHT)
+            self.handle_access_denied(vehicle_info, method="ALPR")
 
-        if not cap.isOpened():
-            print("[ERROR] Gagal membuka kamera!")
-            return
+    def process_rfid_trigger(self, rfid_uid: str):
+        """Proses pembacaan kartu saat RFID di-tap."""
+        print(f"\n[RFID] Kartu terdeteksi: UID {rfid_uid}")
+        self.hw.lcd.display(
+            "  KARTU TERDETEKSI  ",
+            f"UID: {rfid_uid[:14]}",
+            "MEMERIKSA DATA...",
+            "MOHON TUNGGU..."
+        )
+        self.hw.buzzer_beep(0.08, 1)
 
-        print("[OK] Camera started. Tekan 'q' untuk keluar.")
-        if is_manual:
-            print("[INFO] Mode TEST Aktif: Tekan 'SPASI' untuk mengirim gambar ke API.")
+        # Cocokkan UID ke database
+        card_info = self.db.lookup_rfid(rfid_uid)
+        if card_info["matched"]:
+            self.handle_access_granted(card_info, method="RFID")
         else:
-            print(f"[INFO] Mode DEPLOY Aktif: Auto-capture tiap {config.MIN_CAPTURE_INTERVAL}s")
+            self.handle_access_denied(card_info, method="RFID")
 
-        frame_count = 0
-        fps_start = time.time()
-        fps = 0.0
-        
-        trigger_capture = False
+    def run(self):
+        """Loop utama pemantauan gerbang secara real-time."""
+        print("\n" + "=" * 60)
+        print("  MEMULAI PEMANTAUAN GERBANG (Loop Standby)")
+        print("  Tekan 'Ctrl + C' untuk menghentikan sistem.")
+        print("=" * 60 + "\n")
 
         try:
             while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
+                # 1. Cek Sensor Infrared (Kendaraan Tiba)
+                if self.hw.is_vehicle_detected():
+                    self.process_alpr_trigger()
 
-                frame_count += 1
-                time_since_last = time.time() - self.last_api_call
+                # 2. Cek Kartu RFID USB (Civitas Mengetap Kartu)
+                scanned_rfid = self.hw.get_scanned_rfid()
+                if scanned_rfid:
+                    self.process_rfid_trigger(scanned_rfid)
 
-                # Tentukan apakah harus kirim gambar ke API
-                if is_manual:
-                    # Mode Test: Hanya kirim jika tombol SPASI ditekan dan API sedang tidak sibuk
-                    should_process = trigger_capture and not self.is_api_processing
-                    trigger_capture = False  # Reset flag setelah dipakai
-                else:
-                    # Mode Deploy: Otomatis berdasarkan interval dan frameskip
-                    should_process = (
-                        time_since_last >= config.MIN_CAPTURE_INTERVAL and
-                        not self.is_api_processing and
-                        (frame_count % config.SKIP_FRAMES == 0)
-                    )
+                # 3. Cek Tombol Push Button (Buka Manual oleh Petugas)
+                if self.hw.is_button_pressed():
+                    self.handle_manual_override()
 
-                if should_process:
-                    self.is_api_processing = True
-                    threading.Thread(
-                        target=self._async_recognize,
-                        args=(frame.copy(),),
-                        daemon=True
-                    ).start()
-
-                # Hitung FPS
-                elapsed = time.time() - fps_start
-                if elapsed >= 1.0:
-                    fps = frame_count / elapsed
-                    frame_count = 0
-                    fps_start = time.time()
-
-                # Gambar anotasi & UI
-                annotated = draw_results(frame, self.current_results)
-
-                # Tampilkan FPS
-                cv2.putText(
-                    annotated, f"FPS: {fps:.1f}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2
-                )
-
-                # Tampilkan Status Bar
-                if self.is_api_processing:
-                    status_text = "API Processing..."
-                    status_color = (0, 0, 255) # Merah = Sibuk
-                elif is_manual:
-                    status_text = "Test Mode: Tekan SPASI"
-                    status_color = (255, 200, 0) # Biru muda (Cyan) = Menunggu input user
-                elif time_since_last < config.MIN_CAPTURE_INTERVAL:
-                    cooldown_left = max(0, config.MIN_CAPTURE_INTERVAL - time_since_last)
-                    status_text = f"Cooldown: {cooldown_left:.1f}s"
-                    status_color = (0, 200, 255) # Kuning = Cooldown interval
-                else:
-                    status_text = "API Ready (Auto)"
-                    status_color = (0, 255, 0) # Hijau = Siap auto-capture
-
-                cv2.putText(
-                    annotated, status_text, (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, status_color, 2
-                )
-
-                if config.SHOW_PREVIEW:
-                    cv2.imshow("ALPR Camera", annotated)
-                    key = cv2.waitKey(1) & 0xFF
-                    
-                    if key == ord("q"):
-                        break
-                    elif key == 32: # Tombol Spacebar
-                        trigger_capture = True
+                time.sleep(0.05) # Meringankan beban CPU Raspberry Pi 3B+
 
         except KeyboardInterrupt:
-            print("\n[INFO] Dihentikan oleh user.")
+            print("\n[STOP] Menghentikan sistem Smart Parking Gate...")
         finally:
-            cap.release()
-            cv2.destroyAllWindows()
-            print("[OK] Camera released.")
+            self.cleanup()
 
-    def _init_picamera(self):
-        """Inisialisasi PiCamera2 (untuk Raspberry Pi Camera Module)."""
-        try:
-            from picamera2 import Picamera2
-            picam = Picamera2()
-            picam_config = picam.create_preview_configuration(
-                main={"size": (config.CAMERA_WIDTH, config.CAMERA_HEIGHT),
-                       "format": "RGB888"}
-            )
-            picam.configure(picam_config)
-            picam.start()
-            return picam
-        except ImportError:
-            print("[WARN] picamera2 tidak terinstall. Menggunakan USB camera.")
-            return cv2.VideoCapture(config.CAMERA_INDEX)
-
-    def _display_results(self, results: list):
-        """Tampilkan hasil ke console."""
-        if not results:
-            print("  [--] Tidak ada plat terdeteksi")
-            return
-
-        for r in results:
-            region = r.get("region", {}).get("code", "?")
-            print(f"  [PLATE] {r['plate_text']:<15} "
-                  f"| Confidence: {r['confidence']:.0%} "
-                  f"| Region: {region}")
-
-            # Tampilkan kandidat alternatif
-            candidates = r.get("candidates", [])
-            if len(candidates) > 1:
-                alts = ", ".join([f"{c['plate']}({c['score']:.0%})" for c in candidates[1:3]])
-                print(f"          Alternatives: {alts}")
-
-    def _save_results(self, source_path: str, annotated: np.ndarray, results: list):
-        """Simpan gambar anotasi dan log hasil."""
-        basename = os.path.splitext(os.path.basename(source_path))[0]
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # Simpan gambar anotasi
-        out_path = os.path.join(config.OUTPUT_DIR, f"{basename}_{timestamp}.jpg")
-        cv2.imwrite(out_path, annotated)
-
-        # Log ke file CSV
-        log_path = os.path.join(config.OUTPUT_DIR, "results.csv")
-        file_exists = os.path.exists(log_path)
-
-        with open(log_path, "a", encoding="utf-8") as f:
-            if not file_exists:
-                f.write("timestamp,source,plate_text,confidence,region\n")
-            for r in results:
-                region = r.get("region", {}).get("code", "")
-                f.write(
-                    f"{timestamp},{source_path},{r['plate_text']},"
-                    f"{r['confidence']:.3f},{region}\n"
-                )
+    def cleanup(self):
+        """Lepaskan seluruh resource hardware dan kamera."""
+        if self.cap and self.cap.isOpened():
+            self.cap.release()
+        self.hw.cleanup()
+        print("[OK] Sistem berhasil dinonaktifkan dengan aman.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ALPR System — Plate Recognizer API")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--image", type=str, help="Path ke gambar")
-    group.add_argument("--camera", action="store_true", help="Mode kamera real-time")
-    group.add_argument("--folder", type=str, help="Path ke folder gambar")
-    
-    # Tambahan opsi mode manual
-    parser.add_argument("--manual", action="store_true", help="Mode Test: tekan SPASI untuk capture (hanya untuk --camera)")
-    
+    parser = argparse.ArgumentParser(description="Smart Parking Gate FT UNTIRTA (RPi 3B+)")
+    parser.add_argument("--test-cam", action="store_true", help="Uji coba preview webcam USB")
+    parser.add_argument("--image", type=str, help="Uji coba deteksi satu file gambar")
     args = parser.parse_args()
 
-    pipeline = ALPRPipeline()
+    gate = SmartParkingGate()
 
-    if args.image:
-        pipeline.run_on_image(args.image)
-    elif args.camera:
-        pipeline.run_camera(is_manual=args.manual)
-    elif args.folder:
-        pipeline.run_on_folder(args.folder)
+    if args.test_cam:
+        print("[TEST] Membuka window preview webcam. Tekan 'q' untuk keluar.")
+        while True:
+            frame = gate.capture_frame()
+            if frame is not None:
+                cv2.imshow("Webcam USB Test (RPi 3B+)", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        cv2.destroyAllWindows()
+        gate.cleanup()
+    elif args.image:
+        print(f"[TEST] Menguji gambar: {args.image}")
+        img = cv2.imread(args.image)
+        if img is not None:
+            res = gate.api.recognize(img)
+            if res.get("results"):
+                plate = res["results"][0]["plate_text"]
+                info = gate.db.lookup_vehicle(plate)
+                print(f"Hasil: Plat={plate}, Status={info['status']}")
+            else:
+                print("Tidak ada plat terdeteksi.")
+        gate.cleanup()
+    else:
+        gate.run()
 
 
 if __name__ == "__main__":

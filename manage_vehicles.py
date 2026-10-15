@@ -1,21 +1,21 @@
 """
 Script CLI untuk mengelola Kendaraan Terdaftar (Registered Vehicles) & Log Deteksi di Supabase.
-Memudahkan penambahan civitas akademika baru dan pengecekan log gerbang secara instan.
+Mendukung pendaftaran plat nomor kendaraan dan UID kartu RFID 13.56 MHz.
 
 Penggunaan:
-    # Melihat daftar kendaraan civitas yang terdaftar:
+    # Melihat daftar kendaraan & kartu civitas yang terdaftar:
     python manage_vehicles.py --list
 
     # Menambah kendaraan secara interaktif:
     python manage_vehicles.py --add
 
     # Menambah kendaraan via argumen:
-    python manage_vehicles.py --add --plate "A 1234 BC" --name "Ahmad Zaki" --category "STUDENT" --nim "3332210001"
+    python manage_vehicles.py --add --plate "A 1234 BC" --name "Ahmad Zaki" --category "STUDENT" --nim "3332210001" --rfid "0001234567"
 
     # Menghapus kendaraan terdaftar:
     python manage_vehicles.py --delete "A 1234 BC"
 
-    # Melihat 15 log deteksi terakhir dari gerbang:
+    # Melihat riwayat log deteksi gerbang terbaru:
     python manage_vehicles.py --logs
 """
 
@@ -48,21 +48,21 @@ def list_vehicles():
             if not vehicles:
                 print("\n[INFO] Belum ada kendaraan terdaftar di Supabase.")
                 return
-            print("\n" + "=" * 80)
-            print(f"  DAFTAR KENDARAAN TERDAFTAR (CIVITAS AKADEMIKA) — Total: {len(vehicles)}")
-            print("=" * 80)
-            print(f"{'ID':<4} | {'PLAT NOMOR':<14} | {'NAMA PEMILIK':<24} | {'KATEGORI':<18} | {'NIM / NIP':<15}")
-            print("-" * 80)
+            print("\n" + "=" * 95)
+            print(f"  DAFTAR KENDARAAN & RFID TERDAFTAR (CIVITAS AKADEMIKA) — Total: {len(vehicles)}")
+            print("=" * 95)
+            print(f"{'ID':<4} | {'PLAT NOMOR':<13} | {'NAMA PEMILIK':<22} | {'KATEGORI':<18} | {'NIM / NIP':<15} | {'RFID UID':<12}")
+            print("-" * 95)
             for v in vehicles:
-                print(f"{v.get('id', ''):<4} | {v.get('plate', ''):<14} | {v.get('owner_name', ''):<24} | {v.get('category', ''):<18} | {v.get('nim_nip', '-'):<15}")
-            print("=" * 80 + "\n")
+                print(f"{v.get('id', ''):<4} | {v.get('plate', ''):<13} | {v.get('owner_name', ''):<22} | {v.get('category', ''):<18} | {v.get('nim_nip', '-'):<15} | {v.get('rfid_uid', '-'):<12}")
+            print("=" * 95 + "\n")
         else:
             print(f"[ERROR] Gagal mengambil data (status {r.status_code}): {r.text}")
     except Exception as e:
         print(f"[ERROR] Koneksi ke Supabase gagal: {e}")
 
 
-def add_vehicle(plate=None, name=None, category=None, nim_nip=None):
+def add_vehicle(plate=None, name=None, category=None, nim_nip=None, rfid=None):
     url, headers = get_headers()
     
     # Mode interaktif jika argumen belum lengkap
@@ -89,6 +89,11 @@ def add_vehicle(plate=None, name=None, category=None, nim_nip=None):
     if nim_nip is None:
         nim_nip = input("NIM / NIP (opsional, tekan enter jika kosong): ").strip() or "-"
 
+    if rfid is None:
+        rfid = input("UID Kartu RFID USB (opsional, tekan enter jika kosong): ").strip() or None
+    else:
+        rfid = rfid.strip() or None
+
     if not plate or not name:
         print("[ERROR] Plat nomor dan nama pemilik wajib diisi!")
         return
@@ -97,7 +102,8 @@ def add_vehicle(plate=None, name=None, category=None, nim_nip=None):
         "plate": plate,
         "owner_name": name,
         "category": category,
-        "nim_nip": nim_nip
+        "nim_nip": nim_nip,
+        "rfid_uid": rfid
     }
 
     try:
@@ -105,7 +111,7 @@ def add_vehicle(plate=None, name=None, category=None, nim_nip=None):
         if r.status_code in (200, 201):
             print(f"\n[SUKSES] Plat '{plate}' atas nama '{name}' ({category}) berhasil didaftarkan!")
         elif r.status_code == 409 or 'duplicate' in r.text.lower():
-            print(f"\n[GAGAL] Plat '{plate}' sudah terdaftar di database.")
+            print(f"\n[GAGAL] Plat '{plate}' atau RFID UID sudah terdaftar di database.")
         else:
             print(f"\n[ERROR] Status {r.status_code}: {r.text}")
     except Exception as e:
@@ -143,15 +149,16 @@ def show_logs(limit=15):
             if not logs:
                 print("\n[INFO] Belum ada log deteksi gerbang di Supabase.")
                 return
-            print("\n" + "=" * 95)
+            print("\n" + "=" * 105)
             print(f"  RIWAYAT DETEKSI GERBANG TERBARU (VEHICLE LOGS) — Terakhir {len(logs)} Kejadian")
-            print("=" * 95)
-            print(f"{'WAKTU':<19} | {'PLAT':<12} | {'NAMA PEMILIK':<20} | {'KATEGORI':<18} | {'STATUS':<15}")
-            print("-" * 95)
+            print("=" * 105)
+            print(f"{'WAKTU':<19} | {'METODE':<7} | {'PLAT / UID':<14} | {'NAMA PEMILIK':<22} | {'KATEGORI':<18} | {'STATUS':<15}")
+            print("-" * 105)
             for l in logs:
                 waktu = l.get('created_at', '')[:19].replace('T', ' ')
-                print(f"{waktu:<19} | {l.get('plate', ''):<12} | {l.get('name', ''):<20} | {l.get('category', ''):<18} | {l.get('status', 'TERDAFTAR'):<15}")
-            print("=" * 95 + "\n")
+                metode = l.get('method', 'ALPR')
+                print(f"{waktu:<19} | {metode:<7} | {l.get('plate', ''):<14} | {l.get('name', ''):<22} | {l.get('category', ''):<18} | {l.get('status', 'TERDAFTAR'):<15}")
+            print("=" * 105 + "\n")
         else:
             print(f"[ERROR] Gagal mengambil log (status {r.status_code}): {r.text}")
     except Exception as e:
@@ -159,7 +166,7 @@ def show_logs(limit=15):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Pengelola Kendaraan Terdaftar ALPR FT Untirta")
+    parser = argparse.ArgumentParser(description="Pengelola Kendaraan & RFID Terdaftar ALPR FT Untirta")
     parser.add_argument('--list', action='store_true', help="Tampilkan daftar kendaraan terdaftar")
     parser.add_argument('--add', action='store_true', help="Tambah kendaraan terdaftar baru")
     parser.add_argument('--delete', type=str, nargs='?', const='', help="Hapus kendaraan berdasarkan plat")
@@ -168,20 +175,21 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, help="Nama pemilik kendaraan")
     parser.add_argument('--category', type=str, help="Kategori (STUDENT / LECTURER / ACADEMIC COMMUNITY)")
     parser.add_argument('--nim', type=str, help="NIM atau NIP pemilik")
+    parser.add_argument('--rfid', type=str, help="UID Kartu RFID USB (contoh: 0001234567)")
 
     args = parser.parse_args()
 
     if args.list:
         list_vehicles()
     elif args.add:
-        add_vehicle(args.plate, args.name, args.category, args.nim)
+        add_vehicle(args.plate, args.name, args.category, args.nim, args.rfid)
     elif args.delete is not None:
         delete_vehicle(args.delete)
     elif args.logs:
         show_logs()
     else:
         print("\n=== PENGELOLA KENDARAAN TERDAFTAR (SUPABASE) ===")
-        print("1. Lihat Daftar Kendaraan Terdaftar (--list)")
+        print("1. Lihat Daftar Kendaraan & RFID (--list)")
         print("2. Tambah Kendaraan Baru (--add)")
         print("3. Hapus Kendaraan Terdaftar (--delete)")
         print("4. Lihat Log Deteksi Gerbang Terbaru (--logs)")

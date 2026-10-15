@@ -165,23 +165,78 @@ class SupabaseLogger:
             "status": "TIDAK TERDAFTAR"
         }
 
-    def log_vehicle(self, plate_text: str, confidence: float, region: str = "id", direction: str = "IN") -> dict:
+    def lookup_rfid(self, rfid_uid: str) -> dict:
         """
-        Mencocokkan plat ke registered_vehicles dan mengirimkan data LENGKAP ke vehicle_logs.
+        Mencocokkan UID kartu RFID dengan tabel registered_vehicles di Supabase.
+        """
+        clean_uid = str(rfid_uid).strip().upper()
+        if not clean_uid:
+            return {
+                "matched": False,
+                "plate": "NO_RFID",
+                "owner_name": "Kartu Tidak Valid",
+                "category": "ACADEMIC COMMUNITY",
+                "nim_nip": "-",
+                "status": "TIDAK TERDAFTAR",
+                "method": "RFID"
+            }
+
+        # 1. Mode Supabase Aktif
+        if self.enabled:
+            self.refresh_registered_cache()
+            for item in self.registered_cache:
+                if str(item.get("rfid_uid", "")).strip().upper() == clean_uid:
+                    return {
+                        "matched": True,
+                        "plate": item.get("plate", "RFID_CARD"),
+                        "owner_name": item.get("owner_name", "Civitas Untirta"),
+                        "category": item.get("category", "STUDENT"),
+                        "nim_nip": item.get("nim_nip", "-") or "-",
+                        "status": "TERDAFTAR",
+                        "method": "RFID"
+                    }
+
+        # 2. Mode Demo / Fallback Offline
+        for item in self.fallback_vehicles:
+            if str(item.get("rfid_uid", "")).strip().upper() == clean_uid:
+                return {
+                    "matched": True,
+                    "plate": item.get("plate", "RFID_CARD"),
+                    "owner_name": item.get("owner_name", "Civitas Untirta"),
+                    "category": item.get("category", "STUDENT"),
+                    "nim_nip": item.get("nim_nip", "-") or "-",
+                    "status": "TERDAFTAR",
+                    "method": "RFID"
+                }
+
+        return {
+            "matched": False,
+            "plate": f"RFID-{clean_uid[:8]}",
+            "owner_name": "Kartu Belum Terdaftar",
+            "category": "ACADEMIC COMMUNITY",
+            "nim_nip": "-",
+            "status": "TIDAK TERDAFTAR",
+            "method": "RFID"
+        }
+
+    def log_vehicle(self, plate_text: str, confidence: float = 100.0, region: str = "id", direction: str = "IN", method: str = "ALPR", custom_info: dict = None) -> dict:
+        """
+        Mencocokkan plat/RFID ke registered_vehicles dan mengirimkan data LENGKAP ke vehicle_logs.
         Data yang dikirimkan:
-        - plate       : Plat terdeteksi / terdaftar
+        - plate       : Plat terdeteksi / UID kartu
         - name        : Nama pemilik terdaftar (atau Tamu)
         - category    : STUDENT / LECTURER / ACADEMIC COMMUNITY
         - nim_nip     : NIM / NIP civitas
         - status      : TERDAFTAR / TIDAK TERDAFTAR
+        - method      : ALPR / RFID / MANUAL
         - direction   : IN / OUT
         - confidence  : Akurasi OCR (%)
         - region      : Kode wilayah
         """
         conf_val = round(confidence * 100 if confidence <= 1.0 else confidence, 2)
         
-        # 1. COCOKKAN KE REGISTERED VEHICLES
-        info = self.lookup_vehicle(plate_text)
+        # 1. COCOKKAN KE REGISTERED VEHICLES (Jika tidak diberikan custom_info)
+        info = custom_info or self.lookup_vehicle(plate_text)
 
         payload = {
             "plate": info["plate"],
@@ -189,6 +244,7 @@ class SupabaseLogger:
             "category": info["category"],
             "nim_nip": info["nim_nip"],
             "status": info["status"],
+            "method": method,
             "direction": direction,
             "confidence": conf_val,
             "region": region or "id"
@@ -196,9 +252,9 @@ class SupabaseLogger:
 
         # Tampilkan hasil pencocokan di console RPi
         if info["matched"]:
-            print(f"  [MATCHED OK] Terdaftar: {info['plate']} | {info['owner_name']} ({info['category']} - NIM/NIP: {info['nim_nip']})")
+            print(f"  [MATCHED OK] Terdaftar: {info['plate']} | {info['owner_name']} ({info['category']} - NIM/NIP: {info['nim_nip']}) [{method}]")
         else:
-            print(f"  [UNREGISTERED] Tidak Terdaftar: {info['plate']} | Status: {info['status']}")
+            print(f"  [UNREGISTERED] Tidak Terdaftar: {info['plate']} | Status: {info['status']} [{method}]")
 
         # 2. KIRIM FULL DATA KE SUPABASE
         if not self.enabled:
