@@ -549,7 +549,6 @@ body.modal-open{overflow:hidden}
       <label class="switch"><input type="checkbox" id="remember"><span class="track"></span><span>Remember me</span></label>
       <p id="login-error" class="form-error" role="alert" hidden></p>
       <button class="btn btn-primary btn-block" type="submit">SIGN IN</button>
-      <p class="hint">Akun demo: <code>admin@untirta.ac.id</code> / <code>admin123</code></p>
     </form>
     <footer>&copy; 2026 Capstone A7</footer>
   </div>
@@ -1118,41 +1117,31 @@ body.modal-open{overflow:hidden}
      AUTH (Supabase Cloud Database + Offline Fallback)
      ========================================================= */
   var AUTH_KEY = 'spg_auth';
-  var DEFAULT_USERS = [
-    { email: 'admin@untirta.ac.id', password: 'admin123', name: 'Fathurrizki', role: 'Admin' },
-    { email: 'petugas@untirta.ac.id', password: 'petugas123', name: 'Budi Santoso', role: 'Petugas Gerbang' },
-    { email: 'operator@untirta.ac.id', password: 'operator123', name: 'Siti Rahma', role: 'Operator' }
-  ];
-
   async function verifyUser(email, pass) {
-    // 1. Coba verifikasi ke Supabase jika konfigurasi tersedia
+    // Autentikasi 100% langsung ke tabel users di Supabase Cloud Database
     var cfg = window.SUPABASE_CONFIG || {};
-    if (cfg.url && cfg.anonKey && !cfg.url.includes('YOUR_PROJECT_ID')) {
-      try {
-        var base = cfg.url.replace(/\/+$/, '');
-        var res = await fetch(base + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&password=eq.' + encodeURIComponent(pass) + '&select=*', {
-          headers: {
-            'apikey': cfg.anonKey,
-            'Authorization': 'Bearer ' + cfg.anonKey
-          }
-        });
-        if (res.ok) {
-          var rows = await res.json();
-          if (rows && rows.length > 0) {
-            return { email: rows[0].email, name: rows[0].name, role: rows[0].role || 'Petugas' };
-          }
-        }
-      } catch (err) {
-        console.warn('Gagal koneksi ke Supabase, menggunakan fallback akun lokal:', err);
-      }
+    if (!cfg.url || !cfg.anonKey || cfg.url.includes('YOUR_PROJECT_ID')) {
+      throw new Error('Konfigurasi database Supabase belum terhubung.');
     }
 
-    // 2. Fallback offline: gunakan default accounts
-    var found = DEFAULT_USERS.find(function (u) {
-      return u.email.toLowerCase() === email.toLowerCase() && u.password === pass;
+    var base = cfg.url.replace(/\/+$/, '');
+    var cleanEmail = (email || '').trim().toLowerCase();
+    var res = await fetch(base + '/rest/v1/users?email=ilike.' + encodeURIComponent(cleanEmail) + '&password=eq.' + encodeURIComponent(pass) + '&select=*', {
+      headers: {
+        'apikey': cfg.anonKey,
+        'Authorization': 'Bearer ' + cfg.anonKey
+      }
     });
-    if (found) {
-      return { email: found.email, name: found.name, role: found.role };
+
+    if (res.ok) {
+      var rows = await res.json();
+      if (rows && rows.length > 0) {
+        return {
+          email: rows[0].email,
+          name: rows[0].name,
+          role: rows[0].role || 'ADMIN'
+        };
+      }
     }
     return null;
   }
