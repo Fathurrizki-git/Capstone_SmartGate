@@ -1607,10 +1607,50 @@ h1,h2,h3,p{margin:0}
   }
 
   /* =========================================================
-     LIVE SIMULATION
+     LIVE SUPABASE LOGS & SIMULATION
      ========================================================= */
   var liveTimer = null;
-  function liveTick() {
+  async function loadSupabaseLogs() {
+    var cfg = window.SUPABASE_CONFIG || {};
+    if (!cfg.url || !cfg.anonKey || cfg.url.includes('YOUR_PROJECT_ID')) return false;
+    try {
+      var base = cfg.url.replace(/\/+$/, '');
+      var res = await fetch(base + '/rest/v1/vehicle_logs?select=*&order=created_at.desc&limit=150', {
+        headers: {
+          'apikey': cfg.anonKey,
+          'Authorization': 'Bearer ' + cfg.anonKey
+        }
+      });
+      if (res.ok) {
+        var rows = await res.json();
+        if (rows && rows.length > 0) {
+          state.logs = rows.map(function (r) {
+            return {
+              id: r.id,
+              ts: new Date(r.created_at),
+              name: r.name || 'Civitas Untirta',
+              plate: r.plate,
+              category: r.category || 'STUDENT',
+              dir: r.direction || 'IN',
+              conf: Math.round(Number(r.confidence) || 90),
+              status: r.status || 'TERDAFTAR',
+              nim_nip: r.nim_nip || '-'
+            };
+          });
+          renderCurrent();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal memuat log dari Supabase:', err);
+    }
+    return false;
+  }
+
+  async function liveTick() {
+    var loaded = await loadSupabaseLogs();
+    if (loaded) return;
+
     var person = choosePerson(Math.random);
     if (!person) return;
     var log = makeLog(person, new Date(), Math.random);
@@ -1834,6 +1874,7 @@ h1,h2,h3,p{margin:0}
     setLive(live);
     updateClockDisplays();
     setInterval(updateClockDisplays, 1000);
+    loadSupabaseLogs();
     router();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

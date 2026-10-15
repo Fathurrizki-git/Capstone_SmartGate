@@ -129,6 +129,13 @@ class ALPRPipeline:
         results = self.process_image(image)
         self._display_results(results)
 
+        # Log hasil ke Supabase / Database
+        for r in results:
+            plate_text = r.get('plate_text', '')
+            confidence = r.get('confidence', 0.0)
+            region = r.get('region', {}).get('code', '')
+            self.db.log_vehicle(plate_text, confidence, region)
+
         # Gambar anotasi
         annotated = draw_results(image, results)
 
@@ -169,6 +176,10 @@ class ALPRPipeline:
             self._display_results(results)
 
             for r in results:
+                plate_text = r.get('plate_text', '')
+                confidence = r.get('confidence', 0.0)
+                region = r.get('region', {}).get('code', '')
+                self.db.log_vehicle(plate_text, confidence, region)
                 r["source_file"] = fname
             all_results.extend(results)
 

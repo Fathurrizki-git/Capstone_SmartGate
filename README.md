@@ -39,17 +39,20 @@ Sistem pemantauan gerbang parkir pintar berbasis **Automatic License Plate Recog
 
 ```text
 ALPR/
-├── config.py                  # Konfigurasi token API, kamera, interval, dan Firebase
-├── firebase_logger.py         # Modul integrasi Firebase Realtime Database
+├── config.py                  # Konfigurasi token API, kamera, interval, dan Supabase
+├── supabase_logger.py         # Modul integrasi Supabase REST API & auto vehicle matching
+├── manage_users.py            # CLI Tool pengelola akun pengguna di Supabase
+├── manage_vehicles.py         # CLI Tool pengelola kendaraan terdaftar & viewer log
 ├── plate_recognizer.py        # Client HTTP API Plate Recognizer & anotasi OpenCV
 ├── main.py                    # Script eksekusi utama ALPR pipeline
+├── schema.sql                 # Skema tabel Supabase (users, registered_vehicles, vehicle_logs)
 ├── requirements-pc.txt        # Dependensi Python untuk PC/Laptop
 ├── requirements-rpi.txt       # Dependensi Python untuk Raspberry Pi 4
-├── serviceAccountKey.json     # Kunci kredensial Firebase Admin SDK
 ├── test.jpg                   # Gambar contoh untuk pengujian
 ├── output/                    # Direktori penyimpanan hasil deteksi ALPR
 └── web_dashboard/             # Antarmuka Web Dashboard
     ├── index.html             # Aplikasi utama (SPA Terpadu dengan Router & UI Lengkap)
+    ├── supabase_config.js     # Konfigurasi Supabase untuk Web Dashboard
     ├── Dashboard.html         # Halaman Dashboard individual
     ├── Trendline.html         # Halaman Trendline individual
     ├── VehicleLog.html        # Halaman Log Kendaraan individual
@@ -97,7 +100,7 @@ CAMERA_INDEX = 0  # 0 untuk webcam bawaan, 1 untuk USB webcam eksternal
 #### 3. Setup Tabel Database di Supabase
 1. Masuk ke Dashboard Supabase Anda, lalu buka **SQL Editor**.
 2. Buka file [schema.sql](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/schema.sql) di proyek ini, salin seluruh kodenya, lalu klik **Run**.
-3. Tabel `users`, `registered_vehicles`, dan `vehicle_logs` akan langsung terbuat lengkap dengan data awal.
+3. Tabel `users`, `registered_vehicles`, dan `vehicle_logs` akan langsung terbuat lengkap dengan data awal & RLS policy.
 
 #### 4. Mengelola User (Tambah / Hapus / Lihat)
 Gunakan script CLI [manage_users.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/manage_users.py):
@@ -105,14 +108,30 @@ Gunakan script CLI [manage_users.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/One
 # Melihat daftar user di Supabase:
 python manage_users.py --list
 
-# Menambah user baru:
+# Menambah user baru secara interaktif:
 python manage_users.py --add
 
 # Menghapus user:
 python manage_users.py --delete email@untirta.ac.id
 ```
 
-#### 5. Menjalankan Deteksi
+#### 5. Mengelola Kendaraan Terdaftar & Cek Log
+Gunakan script CLI [manage_vehicles.py](file:///c:/Users/MUHAMMAD%20FATHURRIZKI/OneDrive/Documents/1%20-%20MUHAMMAD%20FATHURRIZKI/1%20-%20UNTIRTA/0%20-%20Bismillah%20Capstone/ALPR/alpr/manage_vehicles.py):
+```bash
+# Melihat daftar kendaraan civitas yang terdaftar:
+python manage_vehicles.py --list
+
+# Mendaftarkan plat civitas baru:
+python manage_vehicles.py --add --plate "A 1234 BC" --name "Ahmad Zaki" --category "STUDENT" --nim "3332210001"
+
+# Menghapus kendaraan terdaftar:
+python manage_vehicles.py --delete "A 1234 BC"
+
+# Melihat riwayat log deteksi gerbang terbaru:
+python manage_vehicles.py --logs
+```
+
+#### 6. Menjalankan Deteksi Gerbang
 * **Mode Kamera Otomatis (Live Deploy):**
   ```bash
   python main.py --camera
@@ -153,7 +172,7 @@ python manage_users.py --delete email@untirta.ac.id
 
 * **Backend / Edge Device:** Python 3.9+, OpenCV, NumPy, Requests, Threading.
 * **Computer Vision / AI:** [Plate Recognizer Snapshot API](https://platerecognizer.com/) (OCR Plat Nomor Kendaraan Indonesia).
-* **Cloud Database:** Firebase Realtime Database.
+* **Cloud Database:** Supabase (PostgreSQL Cloud REST API HTTPS — 100% tanpa MQTT).
 * **Frontend Web:** HTML5, CSS3 Modern (CSS Grid, Flexbox, Fluid Clamping, Glassmorphism, CSS Custom Properties), Vanilla JavaScript ES6+ (No heavy framework dependencies, ringan dan cepat).
 * **Font:** Plus Jakarta Sans (Google Fonts).
 
