@@ -1267,19 +1267,14 @@ body.modal-open{overflow:hidden}
     else if (a.tag === 'MANUAL OPEN') tagClass = 'manual';
 
     var statusDesc = 'Peringatan Keamanan Aktif';
-    var actionAdvice = 'Lakukan verifikasi identitas pengendara sesuai SOP keamanan gerbang keluar.';
     if (a.tag === 'RFID MISMATCH') {
       statusDesc = 'AKSES DITOLAK: Kartu RFID Berbeda dengan Pemilik Plat Terdaftar';
-      actionAdvice = '1. Minta pengendara menunjukkan STNK dan identitas resmi (KTM/KTP/SIM).<br>2. Periksa apakah plat nomor di STNK cocok dengan kendaraan.<br>3. Jika identitas valid, petugas dapat menekan Buka Palang Manual di bawah.';
     } else if (a.tag === 'UNREGISTERED') {
       statusDesc = 'AKSES DITOLAK: Kendaraan Belum Terdaftar (Pengendara Tamu)';
-      actionAdvice = '1. Konfirmasi identitas pengendara tamu dan periksa karcis/tiket keluar.<br>2. Catat identitas tamu bila diperlukan.<br>3. Buka palang gerbang secara manual melalui tombol di bawah jika verifikasi selesai.';
     } else if (a.tag === 'OCR FAILED') {
       statusDesc = 'AKSES DITOLAK: Plat Nomor Tidak Terbaca Jelas / Buram';
-      actionAdvice = '1. Periksa fisik plat nomor kendaraan yang berhenti di gerbang keluar.<br>2. Pastikan plat tidak kotor atau terhalang aksesori.<br>3. Buka palang gerbang secara manual setelah memastikan kendaraan aman.';
     } else if (a.tag === 'MANUAL OPEN') {
       statusDesc = 'AKSES DIBERIKAN: Palang Dibuka Manual Jarak Jauh via Website';
-      actionAdvice = 'Aktivitas tercatat dalam sistem audit keamanan Smart Parking Gate FT UNTIRTA.';
     }
 
     var html =
@@ -1300,19 +1295,12 @@ body.modal-open{overflow:hidden}
         '</div>' +
       '</div>' +
 
-      '<dl class="kv" style="margin-bottom:18px">' +
+      '<dl class="kv" style="margin-bottom:20px">' +
         '<dt>Kategori</dt><dd>' + (a.tag || esc(a.type.toUpperCase())) + '</dd>' +
         (a.plate ? ('<dt>Plat Terkait</dt><dd><span class="plate" style="font-size:14px;padding:3px 8px;margin:0">' + esc(a.plate) + '</span></dd>') : '') +
         '<dt>Status Sistem</dt><dd><span style="color:' + (a.type === 'danger' ? '#ff8a8c' : a.type === 'warning' ? '#ffb547' : '#5fa8ff') + ';font-weight:600">' + esc(statusDesc) + '</span></dd>' +
         '<dt>Arah Gerbang</dt><dd><span class="pill out">OUT (GERBANG KELUAR)</span></dd>' +
       '</dl>' +
-
-      '<div style="margin-bottom:20px">' +
-        '<div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--graygray-400);margin-bottom:6px">Rekomendasi Tindakan Satpam</div>' +
-        '<div style="font-size:12.5px;line-height:1.55;color:#cbd5e0;background:rgba(255,181,71,.08);padding:12px 14px;border-radius:12px;border:1px solid rgba(255,181,71,.25)">' +
-          actionAdvice +
-        '</div>' +
-      '</div>' +
 
       '<div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap">' +
         '<button type="button" class="btn btn-ghost" id="modal-alert-close">Tutup</button>' +
