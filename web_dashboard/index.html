@@ -566,10 +566,10 @@ body.modal-open{overflow:hidden}
     </div>
     <div class="sb-divider"></div>
     <nav class="nav" aria-label="Dashboard sections">
-      <a href="#/dashboard" data-route="dashboard"><span class="nav-ic" data-icon="home" data-size="15"></span>Dashboard</a>
-      <a href="#/trendline" data-route="trendline"><span class="nav-ic"><img src="img/chart_blue.svg" width="15" height="15" alt="" class="ic chart-ic-blue" style="vertical-align:middle;object-fit:contain"><img src="img/chart.svg" width="15" height="15" alt="" class="ic chart-ic-white" style="vertical-align:middle;object-fit:contain"></span>Trendline</a>
-      <a href="#/vehicle-log" data-route="vehicle-log"><span class="nav-ic" data-icon="car" data-size="15"></span>Vehicle Log</a>
-      <a href="#/security" data-route="security"><span class="nav-ic" data-icon="shield" data-size="15"></span>Security Notification<span class="badge js-unread" hidden>0</span></a>
+      <a href="/dashboard" data-route="dashboard"><span class="nav-ic" data-icon="home" data-size="15"></span>Dashboard</a>
+      <a href="/trendline" data-route="trendline"><span class="nav-ic"><img src="img/chart_blue.svg" width="15" height="15" alt="" class="ic chart-ic-blue" style="vertical-align:middle;object-fit:contain"><img src="img/chart.svg" width="15" height="15" alt="" class="ic chart-ic-white" style="vertical-align:middle;object-fit:contain"></span>Trendline</a>
+      <a href="/vehicle-log" data-route="vehicle-log"><span class="nav-ic" data-icon="car" data-size="15"></span>Vehicle Log</a>
+      <a href="/security" data-route="security"><span class="nav-ic" data-icon="shield" data-size="15"></span>Security Notification<span class="badge js-unread" hidden>0</span></a>
     </nav>
     <div class="sb-footer">
       <div class="help-card">
@@ -630,8 +630,8 @@ body.modal-open{overflow:hidden}
               <div class="muted" id="date-big" style="margin-top:4px;font-size:13px"></div>
             </div>
             <div class="w-actions">
-              <a class="btn btn-primary" href="#/vehicle-log"><span data-icon="car" data-size="15"></span>Lihat Vehicle Log</a>
-              <a class="btn btn-ghost" href="#/security"><span data-icon="camera" data-size="15"></span>Real-Time Camera</a>
+              <a class="btn btn-primary" href="/vehicle-log" data-route="vehicle-log"><span data-icon="car" data-size="15"></span>Lihat Vehicle Log</a>
+              <a class="btn btn-ghost" href="/security" data-route="security"><span data-icon="camera" data-size="15"></span>Real-Time Camera</a>
             </div>
           </div>
           <div class="w-crodas-wrap">
@@ -673,7 +673,7 @@ body.modal-open{overflow:hidden}
         <div class="card">
           <div class="card-head">
             <div><div class="card-title">Vehicle Log</div><div class="card-sub"><img src="img/circle.svg" width="15" height="15" alt="" class="ic" style="vertical-align:middle" onerror="this.outerHTML='<span data-icon=\'checkCircle\' data-size=\'15\' class=\'up\'></span>'"><span>Total <b id="dash-total">0</b> Vehicle Today</span></div></div>
-            <a href="#/vehicle-log" class="btn btn-ghost">Lihat semua</a>
+            <a href="/vehicle-log" data-route="vehicle-log" class="btn btn-ghost">Lihat semua</a>
           </div>
           <div class="table-wrap">
             <table class="table">
@@ -1807,16 +1807,44 @@ body.modal-open{overflow:hidden}
     'vehicle-log': { title: 'Vehicle Log', render: renderVehicleLog },
     'security': { title: 'Security Notification', render: renderSecurity }
   };
-  function getRoute() { return (location.hash || '').replace(/^#\/?/, '').split('?')[0]; }
+  function getRoute() {
+    if (location.hash) {
+      return location.hash.replace(/^#\/?/, '').split('?')[0];
+    }
+    var p = (location.pathname || '').replace(/\/index\.html$/i, '').replace(/^\/+|\/+$/g, '');
+    var parts = p.split('/');
+    var last = parts[parts.length - 1];
+    return last || '';
+  }
+  function navigate(route, replace) {
+    if (location.protocol === 'file:') {
+      if (getRoute() === route) renderCurrent();
+      else if (replace) location.replace('#/' + route);
+      else location.hash = '#/' + route;
+      return;
+    }
+    var targetPath = '/' + route;
+    if (location.pathname !== targetPath || location.hash) {
+      if (replace) {
+        history.replaceState({ route: route }, '', targetPath);
+      } else {
+        history.pushState({ route: route }, '', targetPath);
+      }
+    }
+    router();
+  }
   function router() {
     var route = getRoute();
     var user = currentUser();
     if (!user) {
-      if (route !== 'login') { location.replace('#/login'); return; }
+      if (route !== 'login') { navigate('login', true); return; }
       showLogin();
       return;
     }
-    if (!ROUTES[route]) { location.replace('#/dashboard'); return; }
+    if (!ROUTES[route] || route === 'login') {
+      navigate('dashboard', true);
+      return;
+    }
     showApp(route, user);
   }
   function showLogin() {
@@ -1859,9 +1887,6 @@ body.modal-open{overflow:hidden}
       updateBadges();
       ROUTES[state.route].render();
     }
-  }
-  function navigate(route) {
-    if (getRoute() === route) renderCurrent(); else location.hash = '#/' + route;
   }
 
   /* =========================================================
@@ -2201,7 +2226,7 @@ body.modal-open{overflow:hidden}
         try { live = localStorage.getItem('spg_live') !== '0'; } catch (e) { }
         setLive(live);
         loadSupabaseLogs();
-        if (getRoute() === 'dashboard') router(); else location.hash = '#/dashboard';
+        navigate('dashboard');
         toast('Selamat datang, ' + user.name + ' (' + (user.role || 'Admin') + ')!', 'success');
       } catch (ex) {
         show('Gagal memverifikasi akun: ' + (ex.message || ex));
@@ -2223,7 +2248,7 @@ body.modal-open{overflow:hidden}
       setLive(false);
       clearAuth();
       var t = $('#toasts'); if (t) t.innerHTML = '';
-      location.hash = '#/login';
+      navigate('login');
     });
 
     // Sidebar mobile
@@ -2439,9 +2464,29 @@ body.modal-open{overflow:hidden}
       }
     });
 
-    // Resize → redraw charts
-    window.addEventListener('resize', debounce(redrawCharts, 150));
+    // Intercept clicks on internal links for Clean SPA Navigation
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('a');
+      if (!a) return;
+      var href = a.getAttribute('href');
+      if (!href) return;
+      if (a.target === '_blank' || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+
+      var route = a.dataset.route;
+      if (!route) {
+        var clean = href.replace(/^#\/?/, '').replace(/^\//, '').split('?')[0];
+        if (ROUTES[clean] || clean === 'login') route = clean;
+      }
+      if (route && (ROUTES[route] || route === 'login')) {
+        e.preventDefault();
+        navigate(route);
+      }
+    });
+
+    // Navigation events: History API & backward compatibility hashchange
+    window.addEventListener('popstate', router);
     window.addEventListener('hashchange', router);
+    window.addEventListener('resize', debounce(redrawCharts, 150));
     window.addEventListener('beforeunload', stopCam);
     // Sinkronisasi logout/login antar tab
     window.addEventListener('storage', function (e) { if (e.key === AUTH_KEY) router(); });
