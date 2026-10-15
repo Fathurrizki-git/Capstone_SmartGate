@@ -361,8 +361,7 @@ class SupabaseLogger:
             "status": info["status"],
             "method": method,
             "direction": direction,
-            "confidence": conf_val,
-            "region": region or "id"
+            "confidence": conf_val
         }
 
         # Tampilkan hasil pencocokan di console RPi
