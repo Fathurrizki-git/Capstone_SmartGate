@@ -1180,6 +1180,7 @@ body.modal-open{overflow:hidden}
      TOAST & MODAL
      ========================================================= */
   function toast(msg, type) {
+    if (!currentUser() || state.route === 'login') return;
     type = type || 'info';
     var ic = type === 'success' ? 'checkCircle' : type === 'error' ? 'alert' : 'info';
     var el = document.createElement('div');
@@ -1820,7 +1821,9 @@ body.modal-open{overflow:hidden}
   }
   function showLogin() {
     stopCam();
+    setLive(false);
     state.route = 'login';
+    var t = $('#toasts'); if (t) t.innerHTML = '';
     $('#app-view').hidden = true;
     $('#login-view').hidden = false;
     document.title = 'Sign In | Smart Parking Gate FT Untirta';
@@ -2002,6 +2005,7 @@ body.modal-open{overflow:hidden}
   }
 
   async function liveTick() {
+    if (!currentUser() || state.route === 'login') return;
     var loaded = await loadSupabaseLogs();
     if (loaded) return;
 
@@ -2193,8 +2197,12 @@ body.modal-open{overflow:hidden}
         err.hidden = true;
         setAuth({ email: user.email, name: user.name, role: user.role || 'Admin' }, $('#remember').checked);
         $('#login-pass').value = '';
-        toast('Selamat datang, ' + user.name + ' (' + (user.role || 'Admin') + ')!', 'success');
+        var live = true;
+        try { live = localStorage.getItem('spg_live') !== '0'; } catch (e) { }
+        setLive(live);
+        loadSupabaseLogs();
         if (getRoute() === 'dashboard') router(); else location.hash = '#/dashboard';
+        toast('Selamat datang, ' + user.name + ' (' + (user.role || 'Admin') + ')!', 'success');
       } catch (ex) {
         show('Gagal memverifikasi akun: ' + (ex.message || ex));
       } finally {
@@ -2212,8 +2220,9 @@ body.modal-open{overflow:hidden}
 
     // Logout
     $('#logout-btn').addEventListener('click', function () {
+      setLive(false);
       clearAuth();
-      toast('Anda telah logout.', 'info');
+      var t = $('#toasts'); if (t) t.innerHTML = '';
       location.hash = '#/login';
     });
 
@@ -2445,13 +2454,17 @@ body.modal-open{overflow:hidden}
     hydrateIcons(document);
     hydrateLogos();
     bind();
-    var live = true;
-    try { live = localStorage.getItem('spg_live') !== '0'; } catch (e) { }
-    setLive(live);
     updateClockDisplays();
     setInterval(updateClockDisplays, 1000);
-    loadSupabaseLogs();
     router();
+    if (currentUser()) {
+      var live = true;
+      try { live = localStorage.getItem('spg_live') !== '0'; } catch (e) { }
+      setLive(live);
+      loadSupabaseLogs();
+    } else {
+      setLive(false);
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
