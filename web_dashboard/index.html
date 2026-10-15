@@ -70,9 +70,56 @@ h1,h2,h3,p{margin:0}
 .btn-primary{background:var(--blue)}
 .btn-green{background:linear-gradient(128deg,rgba(11,144,13,.85) 0%,rgba(8,72,12,.85) 100%);border-radius:20px}
 .btn-danger{background:rgba(255,56,60,.18);color:#ff8a8c}
+.btn-warning{background:linear-gradient(135deg,#ffb547 0%,#e68a00 100%);color:#060b26;font-weight:700}
+.btn-warning:hover{filter:brightness(1.1);box-shadow:0 4px 14px rgba(255,181,71,.35)}
 .btn-ghost{background:rgba(255,255,255,.06)}
 .btn-block{width:100%;height:45px;font-size:11px;letter-spacing:.5px}
 .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+
+/* Remote gate control card & tags (Khusus Security Notification) */
+.gate-control-card{
+  background:linear-gradient(128deg,rgba(45,30,4,.85) 0%,rgba(16,22,55,.85) 100%);
+  border:1px solid rgba(255,181,71,.35);
+  border-radius:18px;
+  padding:16px 20px;
+  margin-bottom:18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+.gcc-info{display:flex;align-items:center;gap:12px;min-width:220px}
+.gcc-icon{
+  width:42px;height:42px;border-radius:12px;background:rgba(255,181,71,.2);
+  color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.gcc-title{font-size:14px;font-weight:700;color:#fff}
+.gcc-sub{font-size:12px;color:var(--graygray-400);margin-top:2px}
+.gcc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gcc-status{
+  display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;
+  padding:6px 12px;border-radius:12px;background:rgba(26,31,55,.7);color:var(--graygray-300);
+  border:1px solid rgba(255,255,255,.08);
+}
+.gcc-status.open{
+  background:rgba(1,181,116,.18);color:#5ff0b8;border-color:rgba(1,181,116,.4);
+}
+.alert-tag{
+  display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;margin-left:6px;vertical-align:middle;
+}
+.alert-tag.rfid{background:rgba(255,56,60,.2);color:#ff8a8c;border:1px solid rgba(255,56,60,.35)}
+.alert-tag.ocr{background:rgba(255,181,71,.2);color:#ffc46a;border:1px solid rgba(255,181,71,.35)}
+.alert-tag.guest{background:rgba(44,217,255,.2);color:#7fe6ff;border:1px solid rgba(44,217,255,.3)}
+.alert-tag.manual{background:rgba(1,181,116,.2);color:#5ff0b8;border:1px solid rgba(1,181,116,.3)}
+.btn-quick-open{
+  margin-top:8px;padding:5px 12px;font-size:11.5px;font-weight:700;border-radius:8px;
+  border:1px solid rgba(255,181,71,.4);background:rgba(255,181,71,.12);color:#ffc86b;
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;
+}
+.btn-quick-open:hover{background:var(--orange);color:#060b26}
 .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;border:0;
   background:transparent;color:var(--graygray-400);transition:background .15s,color .15s}
 .icon-btn:hover{background:rgba(255,255,255,.08);color:#fff}
@@ -168,6 +215,10 @@ h1,h2,h3,p{margin:0}
 .nav a:hover{background:rgba(26,31,55,.6)}
 .nav a.active{background:var(--nav-item);box-shadow:0 3.5px 5.5px rgba(0,0,0,.02)}
 .nav a.active .nav-ic{background:var(--blue);color:#fff}
+.nav a .chart-ic-blue{display:inline-block}
+.nav a .chart-ic-white{display:none}
+.nav a.active .chart-ic-blue{display:none}
+.nav a.active .chart-ic-white{display:inline-block}
 .nav .badge{margin-left:auto}
 .badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--red);color:#fff;font-size:11px;font-weight:700}
 .sb-footer{margin-top:auto;display:flex;flex-direction:column;gap:12px}
@@ -366,9 +417,10 @@ h1,h2,h3,p{margin:0}
 
 /* alerts */
 .alert-list{display:flex;flex-direction:column;gap:10px}
-.alert{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:20px;cursor:pointer;transition:transform .15s,opacity .2s;
+.alert{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:20px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s,opacity .2s;
+  border:1px solid rgba(255,255,255,.05);
   background:linear-gradient(128deg,rgba(38,6,7,.74) 0%,rgba(55,26,26,.5) 100%)}
-.alert:hover{transform:translateX(2px)}
+.alert:hover{transform:translateX(2px);box-shadow:0 8px 24px rgba(0,0,0,.35);border-color:rgba(255,255,255,.18)}
 .alert.warning{background:linear-gradient(128deg,rgba(45,30,4,.74) 0%,rgba(60,44,18,.5) 100%)}
 .alert.info{background:linear-gradient(128deg,rgba(4,22,48,.8) 0%,rgba(16,36,70,.5) 100%)}
 .alert.read{opacity:.55;background:rgba(26,31,55,.45)}
@@ -382,6 +434,8 @@ h1,h2,h3,p{margin:0}
 .alert time{display:block;font-size:12px;font-weight:500;color:var(--graygray-400);margin-top:4px}
 .alert-actions{display:flex;gap:4px}
 .alert-actions .icon-btn{width:30px;height:30px}
+.notif-summary-item{transition:transform .15s,background .15s,border-color .15s}
+.notif-summary-item:hover{transform:translateX(3px);background:rgba(255,255,255,.09)!important;border-color:rgba(44,217,255,.3)!important}
 .empty-state{text-align:center;padding:36px 12px;color:var(--graygray-400)}
 .empty-state .ic{color:var(--green);margin-bottom:8px}
 
@@ -408,8 +462,9 @@ h1,h2,h3,p{margin:0}
 .last-det{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
 
 /* modal & toast */
-.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,4,15,.65);backdrop-filter:blur(4px);animation:fade .2s}
-.modal-card{width:100%;max-width:440px;border-radius:20px;padding:26px;background:linear-gradient(128deg,#0b1240 0%,#0a0e23 100%);border:1px solid rgba(255,255,255,.08)}
+body.modal-open{overflow:hidden}
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,4,15,.65);backdrop-filter:blur(4px);animation:fade .2s;overscroll-behavior:contain}
+.modal-card{width:100%;max-width:480px;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;border-radius:20px;padding:26px;background:linear-gradient(128deg,#0b1240 0%,#0a0e23 100%);border:1px solid rgba(255,255,255,.08)}
 .modal-card .plate{font-size:26px;padding:8px 16px;margin:14px 0 18px}
 .kv{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;font-size:13px}
 .kv dt{color:var(--graygray-400)}
@@ -512,7 +567,7 @@ h1,h2,h3,p{margin:0}
     <div class="sb-divider"></div>
     <nav class="nav" aria-label="Dashboard sections">
       <a href="#/dashboard" data-route="dashboard"><span class="nav-ic" data-icon="home" data-size="15"></span>Dashboard</a>
-      <a href="#/trendline" data-route="trendline"><span class="nav-ic"><img src="img/chart.svg" width="15" height="15" alt="" class="ic" style="vertical-align:middle;object-fit:contain" onerror="this.outerHTML='<svg class=\'ic\' width=\'15\' height=\'15\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M3 3v18h18\'/><path d=\'m7 15 4-4 3 3 5-6\'/></svg>'"></span>Trendline</a>
+      <a href="#/trendline" data-route="trendline"><span class="nav-ic"><img src="img/chart_blue.svg" width="15" height="15" alt="" class="ic chart-ic-blue" style="vertical-align:middle;object-fit:contain"><img src="img/chart.svg" width="15" height="15" alt="" class="ic chart-ic-white" style="vertical-align:middle;object-fit:contain"></span>Trendline</a>
       <a href="#/vehicle-log" data-route="vehicle-log"><span class="nav-ic" data-icon="car" data-size="15"></span>Vehicle Log</a>
       <a href="#/security" data-route="security"><span class="nav-ic" data-icon="shield" data-size="15"></span>Security Notification<span class="badge js-unread" hidden>0</span></a>
     </nav>
@@ -550,7 +605,7 @@ h1,h2,h3,p{margin:0}
           <input type="checkbox" id="live-toggle"><span class="track"></span>
         </label>
         <span class="chip"><span data-icon="clock" data-size="14"></span><span id="clock">--:--:--</span></span>
-        <a href="#/security" class="icon-btn bell" aria-label="Notifikasi"><span data-icon="bell"></span><span class="badge js-unread" hidden>0</span></a>
+        <button type="button" class="icon-btn bell" id="bell-btn" aria-label="Pusat Notifikasi" title="Klik untuk melihat notifikasi sistem"><span data-icon="bell"></span><span class="badge js-unread" hidden>0</span></button>
         <span class="chip"><span data-icon="user" data-size="14"></span><span class="js-username-admin">Fathurrizki (Admin)</span></span>
       </div>
     </header>
@@ -714,6 +769,26 @@ h1,h2,h3,p{margin:0}
 
     <!-- ================= SECURITY ================= -->
     <section class="view" data-view="security" hidden>
+      <!-- Remote Barrier Control Banner (HANYA ADA DI HALAMAN SECURITY NOTIFICATION) -->
+      <div class="gate-control-card">
+        <div class="gcc-info">
+          <div class="gcc-icon">
+            <span data-icon="parking" data-size="22"></span>
+          </div>
+          <div>
+            <div class="gcc-title">Kontrol Buka Palang Gerbang Keluar (Remote Gate)</div>
+            <div class="gcc-sub">Buka palang manual dari web jika terjadi kendala Kartu Tidak Cocok, Plat Buram, atau Tamu.</div>
+          </div>
+        </div>
+        <div class="gcc-actions">
+          <span class="gcc-status" id="gate-current-status"><span class="live-dot" style="background:var(--red)"></span>Palang Tertutup (0°)</span>
+          <button type="button" class="btn btn-warning" id="btn-remote-open-gate">
+            <span data-icon="parking" data-size="16"></span>
+            <span>Buka Palang Gerbang</span>
+          </button>
+        </div>
+      </div>
+
       <div class="grid g-sec">
         <div class="card">
           <div class="card-head">
@@ -723,6 +798,7 @@ h1,h2,h3,p{margin:0}
             <div class="seg" role="group" aria-label="Filter notifikasi">
               <button type="button" data-afilter="all">Semua</button>
               <button type="button" data-afilter="unread">Belum dibaca</button>
+              <button type="button" data-afilter="rejected">Akses Ditolak</button>
             </div>
             <div style="display:flex;gap:8px">
               <button type="button" class="btn btn-ghost" id="mark-all">Tandai dibaca</button>
@@ -772,6 +848,64 @@ h1,h2,h3,p{margin:0}
       <button class="icon-btn" id="modal-close" aria-label="Tutup" data-icon="x"></button>
     </div>
     <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Buka Palang Gerbang Keluar -->
+<div class="modal" id="confirm-gate-modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-gate-title">
+  <div class="modal-card" style="max-width:460px;border:1px solid rgba(255,181,71,.45);box-shadow:0 16px 45px rgba(0,0,0,.75)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:40px;height:40px;border-radius:12px;background:rgba(255,181,71,.18);color:var(--orange);display:inline-flex;align-items:center;justify-content:center" data-icon="alert" data-size="22"></span>
+        <div>
+          <h3 id="confirm-gate-title" class="card-title" style="font-size:16px">Konfirmasi Buka Palang</h3>
+          <p class="muted" style="font-size:12px">Gerbang Keluar &bull; FT Untirta</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="confirm-gate-close" aria-label="Tutup" data-icon="x"></button>
+    </div>
+
+    <div style="background:rgba(255,56,60,.12);border:1px solid rgba(255,56,60,.35);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.45;color:#ffb0b3">
+      <strong>⚠️ Peringatan Keamanan:</strong><br>
+      Apakah Anda yakin dan situasi di depan gerbang keluar <strong>sudah benar-benar aman</strong> untuk membuka palang secara manual?
+    </div>
+
+    <div style="background:rgba(26,31,55,.6);border-radius:14px;padding:12px 14px;margin-bottom:20px;font-size:12.5px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between"><span class="muted">Petugas Operator:</span><b id="conf-user-name">-</b></div>
+      <div style="display:flex;justify-content:space-between"><span class="muted">Waktu Perintah:</span><b id="conf-time-str">--:--:-- WIB</b></div>
+      <div style="display:flex;justify-content:space-between"><span class="muted">Arah Gerbang:</span><b style="color:var(--cyan)">GERBANG KELUAR (EXIT GATE)</b></div>
+      <div style="display:flex;justify-content:space-between"><span class="muted">Tindakan:</span><b style="color:var(--orange)">Buka Motor Servo Palang (90°)</b></div>
+      <div style="display:flex;justify-content:space-between"><span class="muted">Alasan:</span><span id="conf-gate-reason" style="color:var(--cyan);font-weight:600">Override Manual Petugas</span></div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" class="btn btn-ghost" id="confirm-gate-cancel">Batal</button>
+      <button type="button" class="btn btn-warning" id="confirm-gate-proceed" style="background:linear-gradient(135deg,#ffb547,#ff8800);color:#060b26;font-weight:700">
+        <span data-icon="check" data-size="16"></span>
+        <span>Ya, Buka Palang Sekarang</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ringkasan Notifikasi (Pop-up saat klik Bell) -->
+<div class="modal" id="notif-summary-modal" hidden role="dialog" aria-modal="true" aria-labelledby="notif-summary-title">
+  <div class="modal-card" style="max-width:540px;max-height:88vh;display:flex;flex-direction:column;border:1px solid rgba(44,217,255,.35);box-shadow:0 18px 50px rgba(0,0,0,.8)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:38px;height:38px;border-radius:12px;background:rgba(0,117,255,.18);color:var(--cyan);display:inline-flex;align-items:center;justify-content:center" data-icon="bell" data-size="20"></span>
+        <div>
+          <h3 id="notif-summary-title" class="card-title" style="font-size:16px;margin:0">Notifikasi Sistem</h3>
+          <p class="muted" id="notif-summary-sub" style="font-size:12px;margin:2px 0 0">Memuat daftar notifikasi...</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="notif-summary-close" aria-label="Tutup" data-icon="x"></button>
+    </div>
+
+    <!-- Scrollable Alert List -->
+    <div id="notif-summary-body" style="overflow-y:auto;flex:1;max-height:460px;padding-right:4px;display:flex;flex-direction:column;gap:10px">
+      <!-- Generated via JS -->
+    </div>
   </div>
 </div>
 
@@ -951,13 +1085,26 @@ h1,h2,h3,p{margin:0}
   })();
 
   var alertSeq = 0;
-  function addAlert(type, title, desc, ts, read) {
-    var a = { id: ++alertSeq, type: type, title: title, desc: desc, ts: ts || new Date(), read: !!read };
+  function addAlert(type, title, desc, ts, read, tag, plate, canOpen) {
+    var a = {
+      id: ++alertSeq,
+      type: type,
+      title: title,
+      desc: desc,
+      ts: ts || new Date(),
+      read: !!read,
+      tag: tag || '',
+      plate: plate || '',
+      canOpen: canOpen !== undefined ? canOpen : (type === 'danger' || type === 'warning')
+    };
     state.alerts.unshift(a);
     return a;
   }
-  addAlert('danger', 'Camera offline', 'Kamera CAM-02 (gerbang keluar) kehilangan koneksi selama 4 menit.', new Date(Date.now() - 20 * 3600e3));
-  addAlert('warning', 'Vehicles parked for more than 24 hours', '3 kendaraan telah melewati batas parkir 24 jam.', new Date(Date.now() - 90 * 60e3));
+  // Notifikasi Keamanan Spesifik Sistem Smart Parking Exit Gate (Dual-Auth)
+  addAlert('danger', 'Kartu RFID Tidak Sesuai (Beda Pemilik)', 'Plat nomor B 1234 VZN terdeteksi di gerbang keluar, namun kartu RFID yang di-tap bukan milik pemilik terdaftar. Palang ditahan tertutup.', new Date(Date.now() - 12 * 60e3), false, 'RFID MISMATCH', 'B 1234 VZN', true);
+  addAlert('warning', 'Kendaraan Tamu / Belum Terdaftar', 'Plat nomor A 7891 KZ belum terdaftar di database civitas FT Untirta. Pengendara perlu verifikasi manual atau kartu tamu.', new Date(Date.now() - 38 * 60e3), false, 'UNREGISTERED', 'A 7891 KZ', true);
+  addAlert('warning', 'Plat Nomor Tidak Terbaca Jelas', 'Sensor 1 mendeteksi kendaraan mendekat, namun citra kamera buram / plat tidak terbaca (confidence <70%). Petugas perlu cek fisik plat.', new Date(Date.now() - 85 * 60e3), true, 'OCR FAILED', 'UNKNOWN', true);
+  addAlert('info', 'Palang Gerbang Dibuka Manual via Website', 'Palang keluar berhasil dibuka secara remote oleh Petugas melalui Web Dashboard setelah konfirmasi keamanan.', new Date(Date.now() - 160 * 60e3), true, 'MANUAL OPEN', 'MANUAL-WEB', false);
 
   function occupancy() {
     var inside = 0;
@@ -1042,22 +1189,38 @@ h1,h2,h3,p{margin:0}
     setTimeout(function () { el.classList.add('hide'); }, 3200);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3600);
   }
+  function updateModalScrollLock() {
+    var anyOpen = ($('#modal') && !$('#modal').hidden) ||
+                  ($('#confirm-gate-modal') && !$('#confirm-gate-modal').hidden) ||
+                  ($('#notif-summary-modal') && !$('#notif-summary-modal').hidden);
+    if (anyOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+  }
+
   var lastFocus = null;
   function openModal(html) {
     lastFocus = document.activeElement;
     $('#modal-body').innerHTML = html;
     $('#modal').hidden = false;
+    updateModalScrollLock();
     $('#modal-close').focus();
   }
   function closeModal() {
     if ($('#modal').hidden) return;
     $('#modal').hidden = true;
+    updateModalScrollLock();
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   function openLogModal(id) {
     var l = null;
     for (var i = 0; i < state.logs.length; i++) if (state.logs[i].id === id) { l = state.logs[i]; break; }
     if (!l) return;
+    var titleEl = $('#modal-title');
+    if (titleEl) titleEl.textContent = 'Detail Kendaraan';
+
     var person = people.filter(function (p) { return p.plate === l.plate; })[0];
     var history = state.logs.filter(function (x) { return x.plate === l.plate; }).length;
     openModal(
@@ -1074,6 +1237,172 @@ h1,h2,h3,p{margin:0}
       '<dt>Total aktivitas</dt><dd>' + history + ' tercatat</dd>' +
       '</dl>'
     );
+  }
+
+  function openAlertModal(id) {
+    var a = null;
+    for (var i = 0; i < state.alerts.length; i++) {
+      if (state.alerts[i].id === id) { a = state.alerts[i]; break; }
+    }
+    if (!a) return;
+
+    // Tandai sudah dibaca saat popup dibuka
+    a.read = true;
+    updateBadges();
+    renderSecurity();
+    if (state.route === 'dashboard') {
+      var al = state.alerts.slice(0, 4);
+      $('#dash-alerts').innerHTML = al.length ? al.map(function (x) { return alertHTML(x, true); }).join('') : emptyAlerts();
+    }
+
+    var titleEl = $('#modal-title');
+    if (titleEl) titleEl.textContent = 'Detail Notifikasi Keamanan';
+
+    var ic = a.type === 'danger' ? 'alert' : a.type === 'warning' ? 'alert' : 'info';
+    var iconColor = a.type === 'danger' ? '#ff4d4f' : a.type === 'warning' ? '#ffb547' : '#2cd9ff';
+    var tagClass = 'guest';
+    if (a.tag === 'RFID MISMATCH') tagClass = 'rfid';
+    else if (a.tag === 'OCR FAILED') tagClass = 'ocr';
+    else if (a.tag === 'MANUAL OPEN') tagClass = 'manual';
+
+    var statusDesc = 'Peringatan Keamanan Aktif';
+    var actionAdvice = 'Lakukan verifikasi identitas pengendara sesuai SOP keamanan gerbang keluar.';
+    if (a.tag === 'RFID MISMATCH') {
+      statusDesc = 'AKSES DITOLAK: Kartu RFID Berbeda dengan Pemilik Plat Terdaftar';
+      actionAdvice = '1. Minta pengendara menunjukkan STNK dan identitas resmi (KTM/KTP/SIM).<br>2. Periksa apakah plat nomor di STNK cocok dengan kendaraan.<br>3. Jika identitas valid, petugas dapat menekan Buka Palang Manual di bawah.';
+    } else if (a.tag === 'UNREGISTERED') {
+      statusDesc = 'AKSES DITOLAK: Kendaraan Belum Terdaftar (Pengendara Tamu)';
+      actionAdvice = '1. Konfirmasi identitas pengendara tamu dan periksa karcis/tiket keluar.<br>2. Catat identitas tamu bila diperlukan.<br>3. Buka palang gerbang secara manual melalui tombol di bawah jika verifikasi selesai.';
+    } else if (a.tag === 'OCR FAILED') {
+      statusDesc = 'AKSES DITOLAK: Plat Nomor Tidak Terbaca Jelas / Buram';
+      actionAdvice = '1. Periksa fisik plat nomor kendaraan yang berhenti di gerbang keluar.<br>2. Pastikan plat tidak kotor atau terhalang aksesori.<br>3. Buka palang gerbang secara manual setelah memastikan kendaraan aman.';
+    } else if (a.tag === 'MANUAL OPEN') {
+      statusDesc = 'AKSES DIBERIKAN: Palang Dibuka Manual Jarak Jauh via Website';
+      actionAdvice = 'Aktivitas tercatat dalam sistem audit keamanan Smart Parking Gate FT UNTIRTA.';
+    }
+
+    var html =
+      '<div style="display:flex;align-items:center;gap:12px;margin:12px 0 16px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">' +
+        '<span style="color:' + iconColor + ';flex-shrink:0">' + icon(ic, 24) + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+            esc(a.title) + (a.tag ? ' <span class="alert-tag ' + tagClass + '">' + esc(a.tag) + '</span>' : '') +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--graygray-400);margin-top:3px">' + esc(fmtLongDate(a.ts)) + ' &bull; ' + fmtHMS(a.ts) + ' WIB</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="margin-bottom:16px">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--graygray-400);margin-bottom:6px">Deskripsi Lengkap Notifikasi</div>' +
+        '<div style="font-size:13.5px;line-height:1.55;color:#e2e8f0;background:rgba(6,11,40,.6);padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08)">' +
+          esc(a.desc) +
+        '</div>' +
+      '</div>' +
+
+      '<dl class="kv" style="margin-bottom:18px">' +
+        '<dt>Kategori</dt><dd>' + (a.tag || esc(a.type.toUpperCase())) + '</dd>' +
+        (a.plate ? ('<dt>Plat Terkait</dt><dd><span class="plate" style="font-size:14px;padding:3px 8px;margin:0">' + esc(a.plate) + '</span></dd>') : '') +
+        '<dt>Status Sistem</dt><dd><span style="color:' + (a.type === 'danger' ? '#ff8a8c' : a.type === 'warning' ? '#ffb547' : '#5fa8ff') + ';font-weight:600">' + esc(statusDesc) + '</span></dd>' +
+        '<dt>Arah Gerbang</dt><dd><span class="pill out">OUT (GERBANG KELUAR)</span></dd>' +
+      '</dl>' +
+
+      '<div style="margin-bottom:20px">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--graygray-400);margin-bottom:6px">Rekomendasi Tindakan Satpam</div>' +
+        '<div style="font-size:12.5px;line-height:1.55;color:#cbd5e0;background:rgba(255,181,71,.08);padding:12px 14px;border-radius:12px;border:1px solid rgba(255,181,71,.25)">' +
+          actionAdvice +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap">' +
+        '<button type="button" class="btn btn-ghost" id="modal-alert-close">Tutup</button>' +
+        (a.canOpen ? ('<button type="button" class="btn btn-warning" id="modal-alert-open-gate" data-reason="' + esc(a.title) + '" data-plate="' + esc(a.plate || '') + '" style="background:linear-gradient(135deg,#ffb547,#ff8800);color:#060b26;font-weight:700">' +
+          icon('parking', 16) + '<span>Buka Palang Manual</span></button>') : '') +
+      '</div>';
+
+    openModal(html);
+
+    var cBtn = $('#modal-alert-close');
+    if (cBtn) cBtn.addEventListener('click', closeModal);
+
+    var ogBtn = $('#modal-alert-open-gate');
+    if (ogBtn) {
+      ogBtn.addEventListener('click', function () {
+        closeModal();
+        openConfirmGateModal(this.dataset.reason, this.dataset.plate);
+      });
+    }
+  }
+
+  /* =========================================================
+     NOTIF SUMMARY MODAL (Klik icon Bell Topbar)
+     ========================================================= */
+  function renderNotifSummaryList() {
+    var u = unreadCount();
+    var subEl = $('#notif-summary-sub');
+    if (subEl) {
+      subEl.textContent = u ? (u + ' belum dibaca • Klik untuk membuka di Security Notification') : 'Semua notifikasi dibaca • Klik untuk membuka di Security Notification';
+    }
+
+    var listEl = $('#notif-summary-body');
+    if (!listEl) return;
+
+    if (!state.alerts || state.alerts.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:34px 14px;color:var(--graygray-400)">' +
+        icon('checkCircle', 32) +
+        '<div style="margin-top:10px;font-size:13.5px;color:#fff">Semua Aman</div>' +
+        '<div style="margin-top:4px;font-size:12px">Tidak ada peringatan keamanan aktif saat ini.</div></div>';
+      return;
+    }
+
+    var html = '';
+    state.alerts.forEach(function (a) {
+      var ic = a.type === 'danger' ? 'alert' : a.type === 'warning' ? 'alert' : 'info';
+      var icColor = a.type === 'danger' ? '#ff4d4f' : a.type === 'warning' ? '#ffb547' : '#2cd9ff';
+      var tagClass = 'guest';
+      if (a.tag === 'RFID MISMATCH') tagClass = 'rfid';
+      else if (a.tag === 'OCR FAILED') tagClass = 'ocr';
+      else if (a.tag === 'MANUAL OPEN') tagClass = 'manual';
+
+      html +=
+        '<div class="notif-summary-item ' + (a.read ? 'read' : 'unread') + '" data-id="' + a.id + '" role="button" tabindex="0" title="Klik untuk membuka di halaman Security Notification" ' +
+          'style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:14px;' +
+          'background:' + (a.read ? 'rgba(26,31,55,.45)' : 'rgba(255,255,255,.05)') + ';' +
+          'border:1px solid ' + (a.read ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.14)') + ';' +
+          'cursor:pointer;position:relative">' +
+          '<span style="color:' + icColor + ';margin-top:2px;flex-shrink:0">' + icon(ic, 18) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;font-weight:600;color:#fff">' +
+              (!a.read ? '<span style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></span>' : '') +
+              '<span>' + esc(a.title) + '</span>' +
+              (a.tag ? ' <span class="alert-tag ' + tagClass + '" style="font-size:9.5px;padding:1px 6px">' + esc(a.tag) + '</span>' : '') +
+            '</div>' +
+            '<div style="font-size:12px;line-height:1.45;color:var(--graygray-300);margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' +
+              esc(a.desc) +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--graygray-400);margin-top:6px;display:flex;justify-content:space-between;align-items:center">' +
+              '<span>' + esc(fmtLongDate(a.ts)) + ' &bull; ' + fmtHM(a.ts) + ' WIB</span>' +
+              (a.plate ? ('<span class="plate" style="font-size:11px;padding:1px 6px;margin:0">' + esc(a.plate) + '</span>') : '') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  function openNotifSummaryModal() {
+    renderNotifSummaryList();
+    $('#notif-summary-modal').hidden = false;
+    updateModalScrollLock();
+    var closeBtn = $('#notif-summary-close');
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeNotifSummaryModal() {
+    var m = $('#notif-summary-modal');
+    if (!m || m.hidden) return;
+    m.hidden = true;
+    updateModalScrollLock();
   }
 
   /* =========================================================
@@ -1251,11 +1580,27 @@ h1,h2,h3,p{margin:0}
   }
   function alertHTML(a, compact) {
     var ic = a.type === 'danger' ? 'alert' : a.type === 'warning' ? 'alert' : 'info';
-    var html = '<div class="alert ' + a.type + (a.read ? ' read' : '') + '" data-id="' + a.id + '" tabindex="0">' +
+    var tagClass = 'guest';
+    if (a.tag === 'RFID MISMATCH') tagClass = 'rfid';
+    else if (a.tag === 'OCR FAILED') tagClass = 'ocr';
+    else if (a.tag === 'MANUAL OPEN') tagClass = 'manual';
+
+    var tagHTML = a.tag ? '<span class="alert-tag ' + tagClass + '">' + esc(a.tag) + '</span>' : '';
+
+    var html = '<div class="alert ' + a.type + (a.read ? ' read' : '') + '" data-id="' + a.id + '" tabindex="0" role="button" aria-label="Notifikasi: ' + esc(a.title) + '. Klik untuk melihat detail." title="Klik kartu untuk melihat detail notifikasi">' +
       '<span class="alert-ic">' + icon(ic, 17) + '</span>' +
-      '<div class="alert-body"><div class="alert-title">' + (a.read ? '' : '<span class="new-dot"></span>') + esc(a.title) + '</div>' +
+      '<div class="alert-body"><div class="alert-title">' + (a.read ? '' : '<span class="new-dot"></span>') + esc(a.title) + tagHTML + '</div>' +
       (compact ? '' : '<div class="alert-desc">' + esc(a.desc) + '</div>') +
-      '<time>' + fmtDateTime(a.ts) + '</time></div>';
+      '<time>' + fmtDateTime(a.ts) + '</time>';
+
+    // Tombol Buka Palang Cepat (HANYA pada kartu Security Notification yang memerlukan override petugas)
+    if (!compact && a.canOpen) {
+      html += '<button type="button" class="btn-quick-open" data-act="open-gate-alert" data-reason="' + esc(a.title) + '" data-plate="' + esc(a.plate || '') + '">' +
+        icon('parking', 13) + '<span>Buka Palang Manual</span></button>';
+    }
+
+    html += '</div>';
+
     if (!compact) {
       html += '<div class="alert-actions">' +
         (a.read ? '' : '<button type="button" class="icon-btn" data-act="read" title="Tandai dibaca" aria-label="Tandai dibaca">' + icon('check', 16) + '</button>') +
@@ -1426,7 +1771,14 @@ h1,h2,h3,p{margin:0}
 
   function renderSecurity() {
     $$('[data-afilter]').forEach(function (b) { b.classList.toggle('active', b.dataset.afilter === state.alertFilter); });
-    var list = state.alertFilter === 'unread' ? state.alerts.filter(function (a) { return !a.read; }) : state.alerts;
+    var list = state.alerts;
+    if (state.alertFilter === 'unread') {
+      list = state.alerts.filter(function (a) { return !a.read; });
+    } else if (state.alertFilter === 'rejected') {
+      list = state.alerts.filter(function (a) {
+        return a.canOpen || a.type === 'danger' || a.tag === 'RFID MISMATCH' || a.tag === 'UNREGISTERED' || a.tag === 'OCR FAILED';
+      });
+    }
     $('#sec-alerts').innerHTML = list.length ? list.map(function (a) { return alertHTML(a, false); }).join('') : emptyAlerts();
     $('#mark-all').disabled = unreadCount() === 0;
     $('#clear-read').disabled = !state.alerts.some(function (a) { return a.read; });
@@ -1660,10 +2012,18 @@ h1,h2,h3,p{margin:0}
     if (state.logs.length > 2000) state.logs.length = 2000;
     state.newIds = {}; state.newIds[log.id] = true;
     setTimeout(function () { delete state.newIds[log.id]; }, 1700);
+    // Deteksi & Peringatan Keamanan Otomatis
     if (log.conf < 80) {
-      addAlert('warning', 'Low confidence plate reading', 'Plat ' + log.plate + ' terbaca dengan confidence ' + log.conf + '% — mohon verifikasi manual.');
-      toast('Peringatan: confidence rendah untuk ' + log.plate, 'error');
+      addAlert('warning', 'Plat Nomor Tidak Terbaca Jelas', 'Plat ' + log.plate + ' terbaca dengan confidence rendah (' + log.conf + '%). Mohon cek fisik plat kendaraan.', new Date(), false, 'OCR FAILED', log.plate, true);
+      toast('Peringatan: Plat ' + log.plate + ' terbaca buram / tidak valid', 'error');
+    } else if (Math.random() < 0.08) {
+      addAlert('danger', 'Kartu RFID Tidak Sesuai (Beda Pemilik)', 'Plat nomor ' + log.plate + ' terdeteksi di gerbang keluar, namun kartu RFID yang di-tap bukan milik pemilik terdaftar. Palang ditahan tertutup.', new Date(), false, 'RFID MISMATCH', log.plate, true);
+      toast('Peringatan Keamanan: Kartu RFID tidak cocok untuk ' + log.plate, 'error');
+    } else if (Math.random() < 0.08) {
+      addAlert('warning', 'Kendaraan Tamu / Belum Terdaftar', 'Kendaraan dengan plat ' + log.plate + ' belum terdaftar dalam database civitas FT Untirta.', new Date(), false, 'UNREGISTERED', log.plate, true);
+      toast('Info: Kendaraan tamu ' + log.plate + ' terdeteksi di gerbang keluar', 'info');
     }
+
     var occ = occupancy();
     if (occ / CAPACITY >= 0.9 && !state.occAlerted) {
       state.occAlerted = true;
@@ -1688,6 +2048,120 @@ h1,h2,h3,p{margin:0}
     var cb = $('#clock-big'); if (cb) cb.textContent = fmtHMS(n);
     var db = $('#date-big'); if (db) db.textContent = fmtLongDate(n);
     var ct = $('#cam-time'); if (ct) ct.textContent = fmtLongDate(n) + ' \u2022 ' + fmtHMS(n);
+  }
+
+  /* =========================================================
+     REMOTE GATE OPEN & CONFIRMATION MODAL (SECURITY ONLY)
+     ========================================================= */
+  var pendingGateReason = 'Override Manual Petugas';
+  function openConfirmGateModal(reason, plate) {
+    var user = currentUser() || { name: 'Admin', role: 'Petugas' };
+    pendingGateReason = reason || (plate ? ('Buka Manual Kendaraan ' + plate) : 'Override Manual Petugas via Website');
+    $('#conf-user-name').textContent = user.name + ' (' + (user.role || 'Petugas') + ')';
+    $('#conf-time-str').textContent = fmtHMS(new Date()) + ' WIB';
+    $('#conf-gate-reason').textContent = pendingGateReason;
+    $('#confirm-gate-modal').hidden = false;
+    updateModalScrollLock();
+    $('#confirm-gate-proceed').focus();
+  }
+  function closeConfirmGateModal() {
+    $('#confirm-gate-modal').hidden = true;
+    updateModalScrollLock();
+  }
+
+  async function executeRemoteGateOpen() {
+    var user = currentUser() || { name: 'Admin', role: 'Petugas' };
+    closeConfirmGateModal();
+
+    // 1. Kirim perintah buka palang ke Supabase (tabel gate_commands & vehicle_logs)
+    var cfg = window.SUPABASE_CONFIG || {};
+    if (cfg.url && cfg.anonKey && !cfg.url.includes('YOUR_PROJECT_ID')) {
+      try {
+        var base = cfg.url.replace(/\/+$/, '');
+        // Insert perintah ke gate_commands
+        await fetch(base + '/rest/v1/gate_commands', {
+          method: 'POST',
+          headers: {
+            'apikey': cfg.anonKey,
+            'Authorization': 'Bearer ' + cfg.anonKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            command: 'OPEN_GATE',
+            status: 'PENDING',
+            operator_name: user.name,
+            reason: pendingGateReason
+          })
+        });
+
+        // Insert log ke vehicle_logs
+        await fetch(base + '/rest/v1/vehicle_logs', {
+          method: 'POST',
+          headers: {
+            'apikey': cfg.anonKey,
+            'Authorization': 'Bearer ' + cfg.anonKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            plate: 'MANUAL-WEB',
+            name: 'Buka Manual Web (' + user.name + ')',
+            category: 'ACADEMIC COMMUNITY',
+            nim_nip: '-',
+            status: 'TERDAFTAR',
+            method: 'WEB_MANUAL',
+            direction: 'OUT',
+            confidence: 100.00
+          })
+        });
+      } catch (err) {
+        console.warn('Gagal mengirim perintah buka gerbang ke Supabase:', err);
+      }
+    }
+
+    // 2. Catat notifikasi keamanan baru
+    addAlert(
+      'info',
+      'Palang Gerbang Keluar Dibuka Manual via Website',
+      'Perintah buka jarak jauh dikonfirmasi oleh ' + user.name + ' (' + (user.role || 'Petugas') + '). Alasan: ' + pendingGateReason,
+      new Date(),
+      false,
+      'MANUAL OPEN',
+      'MANUAL-WEB',
+      false
+    );
+
+    // 3. Tambahkan ke state.logs
+    var newLog = {
+      id: ++seq,
+      ts: new Date(),
+      name: 'Tamu (Buka Web: ' + user.name + ')',
+      plate: 'MANUAL-WEB',
+      category: 'ACADEMIC COMMUNITY',
+      dir: 'OUT',
+      conf: 100,
+      status: 'TERDAFTAR',
+      nim_nip: '-'
+    };
+    state.logs.unshift(newLog);
+    state.newIds = {}; state.newIds[newLog.id] = true;
+
+    // 4. Update UI Status Palang
+    var st = $('#gate-current-status');
+    if (st) {
+      st.className = 'gcc-status open';
+      st.innerHTML = '<span class="live-dot" style="background:var(--green)"></span>PALANG TERBUKA (90°) &bull; Silakan Melintas';
+      setTimeout(function () {
+        if (st) {
+          st.className = 'gcc-status';
+          st.innerHTML = '<span class="live-dot" style="background:var(--red)"></span>Palang Tertutup (0°)';
+        }
+      }, 7000);
+    }
+
+    updateBadges();
+    renderCurrent();
+
+    toast('✅ Konfirmasi diterima! Perintah buka palang berhasil dikirim ke Gerbang Keluar.', 'success');
   }
 
   /* =========================================================
@@ -1810,25 +2284,57 @@ h1,h2,h3,p{margin:0}
     });
 
     // Alerts
-    $('#dash-alerts').addEventListener('click', function (e) { if (e.target.closest('.alert')) navigate('security'); });
-    $('#dash-alerts').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('.alert')) navigate('security'); });
+    $('#dash-alerts').addEventListener('click', function (e) {
+      var el = e.target.closest('.alert');
+      if (el) openAlertModal(Number(el.dataset.id));
+    });
+    $('#dash-alerts').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var el = e.target.closest('.alert');
+        if (el) openAlertModal(Number(el.dataset.id));
+      }
+    });
+
     function handleAlert(e) {
       var el = e.target.closest('.alert');
       if (!el) return;
       var id = Number(el.dataset.id);
       var actBtn = e.target.closest('[data-act]');
-      var act = actBtn ? actBtn.dataset.act : 'read';
-      if (act === 'dismiss') {
-        state.alerts = state.alerts.filter(function (a) { return a.id !== id; });
-        toast('Notifikasi dihapus.', 'info');
-      } else {
-        state.alerts.forEach(function (a) { if (a.id === id) a.read = true; });
+
+      if (actBtn) {
+        var act = actBtn.dataset.act;
+        if (act === 'open-gate-alert') {
+          var reason = actBtn.dataset.reason || 'Buka Palang Manual';
+          var plate = actBtn.dataset.plate || '';
+          openConfirmGateModal(reason, plate);
+          return;
+        }
+        if (act === 'dismiss') {
+          state.alerts = state.alerts.filter(function (a) { return a.id !== id; });
+          toast('Notifikasi dihapus.', 'info');
+          updateBadges();
+          renderSecurity();
+          return;
+        }
+        if (act === 'read') {
+          state.alerts.forEach(function (a) { if (a.id === id) a.read = true; });
+          updateBadges();
+          renderSecurity();
+          return;
+        }
+        return;
       }
-      updateBadges();
-      renderSecurity();
+
+      // Klik pada bodi atau area kartu alert -> Buka pop-up modal deskripsi lengkap notifikasi!
+      openAlertModal(id);
     }
     $('#sec-alerts').addEventListener('click', handleAlert);
-    $('#sec-alerts').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.classList.contains('alert')) handleAlert(e); });
+    $('#sec-alerts').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var el = e.target.closest('.alert');
+        if (el && !e.target.closest('[data-act]')) openAlertModal(Number(el.dataset.id));
+      }
+    });
     $$('[data-afilter]').forEach(function (b) {
       b.addEventListener('click', function () { state.alertFilter = b.dataset.afilter; renderSecurity(); });
     });
@@ -1844,6 +2350,22 @@ h1,h2,h3,p{margin:0}
       toast((before - state.alerts.length) + ' notifikasi yang sudah dibaca dihapus.', 'info');
     });
 
+    // Remote Gate Open Button (HANYA ADA DI HALAMAN SECURITY NOTIFICATION)
+    var remoteBtn = $('#btn-remote-open-gate');
+    if (remoteBtn) {
+      remoteBtn.addEventListener('click', function () {
+        openConfirmGateModal('Override Manual Petugas via Security Panel');
+      });
+    }
+
+    // Modal Konfirmasi Gate
+    $('#confirm-gate-close').addEventListener('click', closeConfirmGateModal);
+    $('#confirm-gate-cancel').addEventListener('click', closeConfirmGateModal);
+    $('#confirm-gate-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeConfirmGateModal();
+    });
+    $('#confirm-gate-proceed').addEventListener('click', executeRemoteGateOpen);
+
     // Camera
     $('#cam-start').addEventListener('click', startCam);
     $('#cam-stop').addEventListener('click', function () { stopCam(); toast('Webcam dihentikan.', 'info'); });
@@ -1852,8 +2374,60 @@ h1,h2,h3,p{margin:0}
     // Modal
     $('#modal-close').addEventListener('click', closeModal);
     $('#modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+
+    // Prevent backdrop scroll wheel/touch
+    ['#modal', '#confirm-gate-modal', '#notif-summary-modal'].forEach(function (id) {
+      var m = $(id);
+      if (!m) return;
+      m.addEventListener('wheel', function (e) {
+        if (e.target === m) e.preventDefault();
+      }, { passive: false });
+      m.addEventListener('touchmove', function (e) {
+        if (e.target === m) e.preventDefault();
+      }, { passive: false });
+    });
+
+    // Notif Summary Modal (Bell Topbar)
+    var bellBtn = $('#bell-btn');
+    if (bellBtn) {
+      bellBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        openNotifSummaryModal();
+      });
+    }
+    $('#notif-summary-close').addEventListener('click', closeNotifSummaryModal);
+    $('#notif-summary-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeNotifSummaryModal();
+    });
+
+    function handleSummaryItemSelect(item) {
+      if (!item) return;
+      var id = Number(item.dataset.id);
+      closeNotifSummaryModal();
+      navigate('security');
+      setTimeout(function () {
+        openAlertModal(id);
+      }, 60);
+    }
+
+    $('#notif-summary-body').addEventListener('click', function (e) {
+      var item = e.target.closest('.notif-summary-item');
+      handleSummaryItemSelect(item);
+    });
+    $('#notif-summary-body').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var item = e.target.closest('.notif-summary-item');
+        handleSummaryItemSelect(item);
+      }
+    });
+
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeModal(); document.body.classList.remove('sb-open'); }
+      if (e.key === 'Escape') {
+        closeModal();
+        closeConfirmGateModal();
+        closeNotifSummaryModal();
+        document.body.classList.remove('sb-open');
+      }
     });
 
     // Resize → redraw charts

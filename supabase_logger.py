@@ -388,3 +388,32 @@ class SupabaseLogger:
             print(f"  [SUPABASE ERROR] Gagal mengirim data ke Supabase: {e}")
 
         return payload
+
+    def get_pending_gate_command(self) -> dict:
+        """
+        Cek apakah ada perintah buka gerbang manual dari Web Dashboard via Supabase.
+        Mengambil 1 perintah berstatus 'PENDING', lalu mengubah statusnya menjadi 'EXECUTED'.
+        """
+        if not self.enabled:
+            return None
+
+        try:
+            url = f"{self.url}/rest/v1/gate_commands?status=eq.PENDING&order=created_at.asc&limit=1"
+            res = requests.get(url, headers=self.headers, timeout=3)
+            if res.status_code == 200:
+                rows = res.json()
+                if rows and len(rows) > 0:
+                    cmd = rows[0]
+                    cmd_id = cmd.get("id")
+                    # Update status menjadi EXECUTED
+                    patch_url = f"{self.url}/rest/v1/gate_commands?id=eq.{cmd_id}"
+                    patch_payload = {
+                        "status": "EXECUTED",
+                        "executed_at": datetime.now().isoformat()
+                    }
+                    requests.patch(patch_url, headers=self.headers, json=patch_payload, timeout=3)
+                    return cmd
+        except Exception:
+            pass
+        return None
+

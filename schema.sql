@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS public.vehicle_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 4. TABEL GATE COMMANDS (Perintah Buka Gerbang Jarak Jauh via Web Dashboard)
+CREATE TABLE IF NOT EXISTS public.gate_commands (
+    id BIGSERIAL PRIMARY KEY,
+    command VARCHAR(50) NOT NULL DEFAULT 'OPEN_GATE',
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'EXECUTED', 'CANCELLED'
+    operator_name VARCHAR(100) DEFAULT 'Petugas',
+    reason VARCHAR(255) DEFAULT 'Buka Gerbang Manual via Web Dashboard',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    executed_at TIMESTAMPTZ
+);
+
 -- ============================================================
 -- KEBIJAKAN AKSES (ROW LEVEL SECURITY / RLS)
 -- Izinkan akses baca dan tulis untuk REST API bawaan Supabase
@@ -46,6 +57,7 @@ CREATE TABLE IF NOT EXISTS public.vehicle_logs (
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.registered_vehicles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vehicle_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gate_commands ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Allow public insert users" ON public.users FOR INSERT WITH CHECK (true);
@@ -60,8 +72,14 @@ CREATE POLICY "Allow public read vehicle_logs" ON public.vehicle_logs FOR SELECT
 CREATE POLICY "Allow public insert vehicle_logs" ON public.vehicle_logs FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public delete vehicle_logs" ON public.vehicle_logs FOR DELETE USING (true);
 
--- Aktifkan Realtime Replication untuk tabel vehicle_logs
+CREATE POLICY "Allow public read gate_commands" ON public.gate_commands FOR SELECT USING (true);
+CREATE POLICY "Allow public insert gate_commands" ON public.gate_commands FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update gate_commands" ON public.gate_commands FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete gate_commands" ON public.gate_commands FOR DELETE USING (true);
+
+-- Aktifkan Realtime Replication untuk tabel vehicle_logs dan gate_commands
 ALTER PUBLICATION supabase_realtime ADD TABLE public.vehicle_logs;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.gate_commands;
 
 -- ============================================================
 -- DATA CONTOH AWAL (SEED DATA)

@@ -64,7 +64,7 @@ Raspberry Pi 3 Model B+ (Header GPIO 40-Pin):
 Sistem menggunakan **Dual-Factor Authentication (2FA)** dan **2 Sensor Infrared Bebas Bug**:
 1. **Sensor IR 1 (Sebelum Palang):** Memicu webcam mengambil foto plat nomor dan meminta pengendara men-tap RFID. Kamera **tidak mengambil gambar terus-menerus** jika tidak ada kendaraan.
 2. **Dual Verification:** Plat nomor **DAN** Kartu RFID **KEDUANYA HARUS COCOK** pada data pemilik yang sama di database `registered_vehicles`.
-3. **Buka Manual (Bypass Tamu):** Jika belum terdaftar, petugas memeriksa manual lalu menekan **Push Button (GPIO 27)**.
+3. **Buka Manual (Bypass Tamu):** Jika belum terdaftar atau terjadi ketidakcocokan, petugas keamanan dapat membuka gerbang secara fisik via **Push Button (GPIO 27)** ATAU secara jarak jauh melalui **Web Dashboard (Menu Security Notification)** dengan pop-up konfirmasi keamanan.
 4. **Sensor IR 2 (Setelah Palang) + Safety Timer:** Setelah palang terbuka, sistem mendeteksi mobil melintas ke Sensor 2. Ketika mobil telah sepenuhnya melewati Sensor 2, sistem mengaktifkan **Safety Timer (2.0s)** sebelum palang turun ke 0°. Jika ada kendaraan susulan memicu Sensor 2 selama timer, timer langsung **direset** agar palang tidak pernah menimpa kendaraan!
 
 ```mermaid
@@ -85,7 +85,7 @@ flowchart TD
     E -->|Belum Terdaftar / Tamu| H["❌ BELUM TERDAFTAR"]
     
     G & H --> I["Palang Keluar TETAP TERTUTUP + Alarm Strobo"]
-    I --> J["🔘 Petugas Cek Manual & Tekan Push Button (GPIO 27)"]
+    I --> J["🔘 Petugas Cek Manual: Tekan Push Button / Web Dashboard"]
     J --> F3
 
     F4 --> K["🚗 Kendaraan Bergerak Maju Melewati Palang"]

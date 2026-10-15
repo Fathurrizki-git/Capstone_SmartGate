@@ -206,6 +206,40 @@ class SmartParkingExitGate:
         # Keamanan & Penutup Palang Otomatis (Sensor IR 2 + Safety Timer)
         self.wait_and_close_gate()
 
+    def handle_web_remote_override(self, cmd_info: dict):
+        """Buka gerbang keluar via instruksi jarak jauh dari Web Dashboard Petugas (Supabase)."""
+        operator = cmd_info.get("operator_name", "Petugas Web")
+        print(f"\n>>> [REMOTE WEB KELUAR] Perintah buka palang diterima dari Website oleh: {operator}!")
+        self.hw.lcd.display(
+            "** REMOTE BUKA WEB *",
+            f"PETUGAS: {operator[:11]}",
+            "PALANG DIBUKA (90*) ",
+            "SILAKAN MELINTAS... "
+        )
+        self.hw.buzzer_beep(0.2, 1)
+        self.hw.open_gate()
+
+        # Catat log keluar manual remote web ke Supabase
+        manual_info = {
+            "matched": True,
+            "plate": "MANUAL-WEB",
+            "owner_name": f"Tamu (Web: {operator})",
+            "category": "ACADEMIC COMMUNITY",
+            "nim_nip": "-",
+            "status": "TERDAFTAR",
+            "confidence": 100.0
+        }
+        self.db.log_vehicle(
+            plate_text="MANUAL-WEB",
+            confidence=100.0,
+            direction="OUT",
+            method="WEB_MANUAL",
+            custom_info=manual_info
+        )
+
+        # Keamanan & Penutup Palang Otomatis (Sensor IR 2 + Safety Timer)
+        self.wait_and_close_gate()
+
     def wait_and_close_gate(self):
         """
         Logika Penutup Palang Otomatis Berbasis 2 Sensor Infrared (Bebas Bug):
@@ -478,6 +512,8 @@ class SmartParkingExitGate:
         print("  Tekan 'Ctrl + C' untuk keluar.")
         print("=" * 65 + "\n")
 
+        last_remote_check = 0.0
+
         try:
             while True:
                 # 1. Pemicu Utama: Sensor IR 1 (Sebelum Palang) mendeteksi kendaraan mendekat
@@ -490,9 +526,17 @@ class SmartParkingExitGate:
                 if scanned_rfid:
                     self.process_dual_verification(initial_rfid=scanned_rfid)
 
-                # 3. Pemicu Manual: Petugas menekan Push Button (tamu/belum terdaftar)
+                # 3. Pemicu Manual Fisik: Petugas menekan Push Button (tamu/belum terdaftar)
                 if self.hw.is_button_pressed():
                     self.handle_manual_override()
+
+                # 4. Pemicu Remote Web: Cek apakah ada perintah buka palang dari Web Dashboard via Supabase
+                now_t = time.time()
+                if now_t - last_remote_check >= 1.0:
+                    last_remote_check = now_t
+                    remote_cmd = self.db.get_pending_gate_command()
+                    if remote_cmd:
+                        self.handle_web_remote_override(remote_cmd)
 
                 time.sleep(0.05)
 
