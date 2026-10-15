@@ -51,8 +51,8 @@ GATE_MAX_WAIT = 25.0         # Batas waktu maksimal tunggu kendaraan melintas se
 
 # ── Database (Supabase Cloud PostgreSQL) ───────────
 # Dapatkan dari: Supabase Dashboard -> Project Settings -> API
-SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
-SUPABASE_KEY = "YOUR_SUPABASE_ANON_OR_SERVICE_KEY"
+SUPABASE_URL = "https://endnfikkzdixablcpamy.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuZG5maWtremRpeGFibGNwYW15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODMzNzMsImV4cCI6MjEwNzU1OTM3M30.4AcnOGYLdHVIPDsQlt2bILxOJ2nswr8OPpgfnDCFqN0"
 
 # ── Penyimpanan & Debug ──────────────────────────
 SAVE_RESULTS = True                         # Simpan foto hasil deteksi ke folder output/

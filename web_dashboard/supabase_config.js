@@ -5,7 +5,6 @@
 // ============================================================
 
 window.SUPABASE_CONFIG = {
-  url: "https://YOUR_PROJECT_ID.supabase.co",
-  anonKey: "YOUR_SUPABASE_ANON_KEY"
+  url: "https://endnfikkzdixablcpamy.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuZG5maWtremRpeGFibGNwYW15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODMzNzMsImV4cCI6MjEwNzU1OTM3M30.4AcnOGYLdHVIPDsQlt2bILxOJ2nswr8OPpgfnDCFqN0"
 };
-

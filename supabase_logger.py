@@ -264,12 +264,13 @@ class SupabaseLogger:
 
             if matched_row:
                 db_rfid = str(matched_row.get("rfid_uid", "")).strip().upper()
+                owner = matched_row.get("owner_name") or matched_row.get("owner") or "Civitas Untirta"
                 if db_rfid and db_rfid == target_rfid:
                     return {
                         "verified": True,
                         "matched": True,
                         "plate": matched_row.get("plate", plate_text),
-                        "owner_name": matched_row.get("owner_name", "Civitas Untirta"),
+                        "owner_name": owner,
                         "category": matched_row.get("category", "STUDENT"),
                         "nim_nip": matched_row.get("nim_nip", "-") or "-",
                         "rfid_uid": db_rfid,
@@ -281,7 +282,7 @@ class SupabaseLogger:
                         "verified": False,
                         "matched": False,
                         "plate": matched_row.get("plate", plate_text),
-                        "owner_name": matched_row.get("owner_name", "Civitas Untirta"),
+                        "owner_name": owner,
                         "category": matched_row.get("category", "STUDENT"),
                         "nim_nip": matched_row.get("nim_nip", "-") or "-",
                         "rfid_uid": target_rfid,
