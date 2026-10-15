@@ -1,6 +1,7 @@
 """
 MJPEG HTTP Streaming Server & Cloudflare Tunnel untuk Kamera ALPR Smart Parking Gate FT Untirta.
 Menyiarkan live feed webcam langsung ke Web Dashboard secara real-time via Localhost & HTTPS Cloudflare Tunnel.
+Mendukung concurrent ThreadedHTTPServer, /video_feed (MJPEG), dan /snapshot (Fast JPEG Polling) yang kebal terhadap Cloudflare Proxy Buffering.
 """
 
 import os
@@ -10,8 +11,11 @@ import time
 import shutil
 import subprocess
 import threading
+from socketserver import ThreadingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import cv2
+import numpy as np
+
 
 class StreamHub:
     """Hub penyimpanan frame terbaru dalam bentuk JPEG bytes untuk disiarkan ke client."""
@@ -19,6 +23,7 @@ class StreamHub:
         self.lock = threading.Lock()
         self.latest_jpeg = None
         self.last_update = 0.0
+        self._placeholder_jpeg = None
 
     def update_frame(self, frame_bgr):
         if frame_bgr is None:
@@ -37,28 +42,78 @@ class StreamHub:
         with self.lock:
             return self.latest_jpeg
 
+    def get_standby_placeholder(self):
+        """Buat gambar standby JPEG jika belum ada frame kamera yang masuk."""
+        if self._placeholder_jpeg is None:
+            h, w = 480, 640
+            img = np.zeros((h, w, 3), dtype=np.uint8)
+            img[:] = (18, 12, 6)
+            cv2.rectangle(img, (20, 20), (w - 20, h - 20), (55, 31, 26), 2)
+            cv2.putText(img, "SMART PARKING GATE FT UNTIRTA", (70, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+            cv2.putText(img, "KAMERA ALPR STANDBY...", (180, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (44, 217, 255), 1)
+            ret, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            self._placeholder_jpeg = buf.tobytes() if ret else b''
+        return self._placeholder_jpeg
+
 
 GLOBAL_HUB = StreamHub()
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Server HTTP multi-thread agar setiap koneksi /frame /snapshot /status berjalan paralel tanpa saling memblokir."""
+    daemon_threads = True
+    allow_reuse_address = True
+
+
 class MJPEGHandler(BaseHTTPRequestHandler):
-    """Handler HTTP untuk menyiarkan multipart MJPEG stream dan status."""
+    """Handler HTTP untuk menyiarkan snapshot JPEG, multipart MJPEG stream, dan status."""
+
+    def do_OPTIONS(self):
+        """Preflight CORS response untuk fetch browser dari Netlify HTTPS."""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.end_headers()
+
     def do_GET(self):
-        # Header CORS agar dashboard Netlify / localhost bisa mengakses tanpa terblokir
-        if self.path == '/status' or self.path == '/health':
+        # 1. Endpoint Status / Health Check
+        if self.path.startswith('/status') or self.path.startswith('/health'):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', '*')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
             self.end_headers()
             self.wfile.write(b'{"status":"ok","camera":"active"}')
             return
 
-        # Default: Video Feed Stream
+        # 2. Endpoint Snapshot JPEG (Single Frame) — 100% Kebal terhadap Cloudflare Proxy Buffering
+        if self.path.startswith('/snapshot') or self.path.startswith('/frame'):
+            jpeg = GLOBAL_HUB.get_jpeg()
+            if not jpeg:
+                jpeg = GLOBAL_HUB.get_standby_placeholder()
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/jpeg')
+            self.send_header('Content-Length', str(len(jpeg)))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', '*')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
+            self.wfile.write(jpeg)
+            return
+
+        # 3. Default: Multipart MJPEG Video Feed Stream
         self.send_response(200)
         self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Cache-Control', 'no-cache, private')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.send_header('Cache-Control', 'no-cache, private, no-store, must-revalidate')
         self.send_header('Pragma', 'no-cache')
         self.end_headers()
 
@@ -66,10 +121,13 @@ class MJPEGHandler(BaseHTTPRequestHandler):
             last_sent = 0.0
             while True:
                 jpeg = GLOBAL_HUB.get_jpeg()
+                if not jpeg:
+                    jpeg = GLOBAL_HUB.get_standby_placeholder()
                 if jpeg and GLOBAL_HUB.last_update != last_sent:
                     last_sent = GLOBAL_HUB.last_update
                     self.wfile.write(b'--frame\r\n')
-                    self.wfile.write(b'Content-Type: image/jpeg\r\n\r\n')
+                    self.wfile.write(b'Content-Type: image/jpeg\r\n')
+                    self.wfile.write(f'Content-Length: {len(jpeg)}\r\n\r\n'.encode('utf-8'))
                     self.wfile.write(jpeg)
                     self.wfile.write(b'\r\n')
                 time.sleep(0.04)  # ~25 FPS
@@ -84,7 +142,7 @@ class MJPEGHandler(BaseHTTPRequestHandler):
 
 
 class VideoStreamServer:
-    """Server streaming HTTP MJPEG background & Cloudflare Tunnel HTTPS otomatis."""
+    """Server streaming HTTP multi-thread & Cloudflare Tunnel HTTPS otomatis."""
     def __init__(self, host='0.0.0.0', port=5050):
         self.host = host
         self.port = port
@@ -95,7 +153,7 @@ class VideoStreamServer:
 
     def start(self):
         try:
-            self.server = HTTPServer((self.host, self.port), MJPEGHandler)
+            self.server = ThreadedHTTPServer((self.host, self.port), MJPEGHandler)
             self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
             self.server_thread.start()
             print(f"[OK] Live Camera Web Stream aktif di http://localhost:{self.port}/video_feed")
@@ -134,7 +192,7 @@ class VideoStreamServer:
                         print("\n" + "=" * 70)
                         print("  [CLOUDFLARE TUNNEL AKTIF - RESMI HTTPS UNTUK NETLIFY]")
                         print(f"  URL Kamera: {feed_url}")
-                        print("  Salin URL di atas ke tombol [URL Kamera] pada Web Dashboard!")
+                        print("  Salin URL di atas ke tombol [URL Cloudflare] pada Web Dashboard!")
                         print("=" * 70 + "\n")
             except Exception as e:
                 print(f"[WARN] Cloudflare Tunnel mengalami kendala: {e}")
