@@ -57,4 +57,4 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 # ── Penyimpanan & Debug ──────────────────────────
 SAVE_RESULTS = True                         # Simpan foto hasil deteksi ke folder output/
 OUTPUT_DIR = "output/"                      # Folder penyimpanan citra
-SHOW_PREVIEW = False                        # Set True jika menggunakan monitor/GUI desktop
+SHOW_PREVIEW = True                         # Set True untuk menampilkan jendela live kamera desktop

@@ -383,7 +383,7 @@ class SmartParkingExitGate:
 
         self.hw.lcd.display_standby()
 
-    def process_dual_verification(self, initial_rfid: str = None):
+    def process_dual_verification(self, initial_rfid: str = None, frame = None):
         """
         Alur Verifikasi Ganda:
         1. Baca Plat Nomor dari Kamera USB.
@@ -400,7 +400,8 @@ class SmartParkingExitGate:
         self.hw.buzzer_beep(0.08, 1)
 
         # 1. Ambil foto dan deteksi plat via Webcam USB
-        frame = self.capture_frame()
+        if frame is None:
+            frame = self.capture_frame()
         if frame is None:
             print("[ERROR] Gagal membaca webcam!")
             self.hw.lcd.display(
@@ -446,6 +447,9 @@ class SmartParkingExitGate:
             self.hw.buzzer_beep(0.1, 1)
 
             print(f"  [MENUNGGU RFID] Menunggu pengendara tap kartu (maks {timeout} detik)...")
+            if not self.hw.is_rpi:
+                print("  [SIMULASI PC] Tekan [SPASI] di jendela kamera untuk simulasi Tap RFID.")
+
             while time.time() - start_wait < timeout:
                 remaining = int(timeout - (time.time() - start_wait))
                 self.hw.lcd.display(
@@ -455,19 +459,53 @@ class SmartParkingExitGate:
                     f"WAKTU: {remaining} DETIK"
                 )
 
+                # Jika mode preview kamera aktif, tetap perbarui frame agar tidak macet
+                if getattr(config, 'SHOW_PREVIEW', True) and self.cap and self.cap.isOpened():
+                    rf_ok, rf_frame = self.cap.read()
+                    if rf_ok and rf_frame is not None:
+                        disp = rf_frame.copy()
+                        dh, dw = disp.shape[:2]
+                        cv2.rectangle(disp, (0, 0), (dw, 55), (20, 20, 20), -1)
+                        cv2.putText(disp, f"PLAT TERDETEKSI: {plate_text} ({int(conf*100)}%)", (15, 25),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
+                        cv2.putText(disp, f"SILAKAN TAP RFID (Sisa: {remaining}s) | TEKAN [SPASI] UNTUK SIMULASI TAP",
+                                    (15, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
+                        cv2.imshow("Smart Parking Gate ALPR - FT Untirta", disp)
+                        k = cv2.waitKey(60) & 0xFF
+                        if k == ord(' ') or k == 13:
+                            matched_veh = self.db.lookup_vehicle(plate_text)
+                            if matched_veh.get("matched"):
+                                for item in getattr(self.db, 'registered_cache', []):
+                                    if item.get("plate") == matched_veh.get("plate"):
+                                        rfid_uid = item.get("rfid_uid")
+                                        break
+                                if not rfid_uid:
+                                    rfid_uid = "0001234567"
+                            else:
+                                rfid_uid = "MOCK_RFID_TAP"
+                            print(f"  [SIMULASI PC] Tap RFID disimulasikan: {rfid_uid}")
+                            self.hw.buzzer_beep(0.08, 1)
+                            break
+                        elif k == ord('m') or k == ord('M'):
+                            self.handle_manual_override()
+                            return
+                        elif k == ord('q') or k == ord('Q') or k == 27:
+                            return
+
                 # Cek jika tombol manual ditekan petugas selama menunggu
                 if self.hw.is_button_pressed():
                     self.handle_manual_override()
                     return
 
-                # Cek jika kartu RFID di-tap
+                # Cek jika kartu RFID di-tap fisik
                 rfid_uid = self.hw.get_scanned_rfid()
                 if rfid_uid:
                     print(f"  [RFID OK] Kartu di-tap: UID {rfid_uid}")
                     self.hw.buzzer_beep(0.08, 1)
                     break
 
-                time.sleep(0.3)
+                if not getattr(config, 'SHOW_PREVIEW', True):
+                    time.sleep(0.2)
 
         if not rfid_uid:
             print("  [TIMEOUT] Batas waktu tap RFID habis.")
@@ -502,35 +540,99 @@ class SmartParkingExitGate:
             self.handle_exit_failed(auth_result, reason=auth_result.get("reason", "UNREGISTERED"))
 
     def run(self):
-        """Loop pemantauan gerbang keluar secara real-time."""
+        """Loop pemantauan gerbang keluar secara real-time dengan Live Camera Feed."""
         print("\n" + "=" * 65)
         print("  MEMULAI PEMANTAUAN GERBANG KELUAR (STANDBY DUAL-AUTH)")
-        print("  Sensor IR 1 (Sebelum Palang): Pemicu deteksi kedatangan & kamera ALPR")
-        print("  Sensor IR 2 (Setelah Palang): Pemicu penutup palang otomatis + timer")
-        print("  Syarat Buka Otomatis: PLAT NOMOR + KARTU RFID KEDUANYA HARUS COCOK!")
-        print("  Bypass Tamu: Tekan Push Button Manual (GPIO 27)")
-        print("  Tekan 'Ctrl + C' untuk keluar.")
+        print("  Status Kamera: LIVE WEBCAM MENYALA TERUS MENERUS")
+        print("  Pemicu Capture Plat:")
+        print("    1. Sensor IR 1 (Sebelum Palang)")
+        print("    2. Tekan tombol [SPASI] pada jendela kamera")
+        print("  Buka Manual: Tekan [M] atau Push Button (GPIO 27)")
+        print("  Keluar: Tekan [Q] atau Ctrl + C")
         print("=" * 65 + "\n")
+
+        window_name = "Smart Parking Gate ALPR - FT Untirta"
+        if getattr(config, 'SHOW_PREVIEW', True):
+            try:
+                cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
+            except Exception as e:
+                print(f"[WARN] Tidak dapat membuka window GUI OpenCV: {e}")
 
         last_remote_check = 0.0
 
         try:
             while True:
-                # 1. Pemicu Utama: Sensor IR 1 (Sebelum Palang) mendeteksi kendaraan mendekat
-                # Kamera HANYA memotret saat ada kendaraan (tidak capture terus menerus)
-                if self.hw.is_vehicle_at_sensor1():
-                    self.process_dual_verification()
+                current_frame = None
+                if self.cap and self.cap.isOpened():
+                    ret, current_frame = self.cap.read()
 
-                # 2. Pemicu Kartu: Jika pengendara men-tap RFID duluan sebelum IR
-                scanned_rfid = self.hw.get_scanned_rfid()
-                if scanned_rfid:
-                    self.process_dual_verification(initial_rfid=scanned_rfid)
+                # Tampilkan live feed secara terus-menerus jika preview aktif
+                key = -1
+                if getattr(config, 'SHOW_PREVIEW', True) and current_frame is not None:
+                    display_frame = current_frame.copy()
+                    h, w = display_frame.shape[:2]
 
-                # 3. Pemicu Manual Fisik: Petugas menekan Push Button (tamu/belum terdaftar)
-                if self.hw.is_button_pressed():
+                    # 1. Overlay Header Bar
+                    cv2.rectangle(display_frame, (0, 0), (w, 42), (25, 25, 25), -1)
+                    cv2.putText(display_frame, "GERBANG KELUAR FT UNTIRTA [LIVE WEBCAM]", (15, 27),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    time_str = time.strftime("%H:%M:%S WIB")
+                    cv2.putText(display_frame, time_str, (w - 140, 27),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+                    # 2. Panduan Area Plat di Tengah Layar (Guide Box)
+                    box_w, box_h = int(w * 0.55), int(h * 0.35)
+                    x1 = (w - box_w) // 2
+                    y1 = (h - box_h) // 2
+                    x2 = x1 + box_w
+                    y2 = y1 + box_h
+                    cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 255), 2)
+                    cv2.putText(display_frame, "ARAHKAN PLAT NOMOR KE SINI", (x1 + 10, y1 - 8),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
+
+                    # 3. Overlay Footer Bar Instruksi
+                    cv2.rectangle(display_frame, (0, h - 35), (w, h), (20, 20, 20), -1)
+                    cv2.putText(display_frame, "TEKAN [SPASI] / SENSOR IR: CAPTURE | [M]: BUKA MANUAL | [Q]: KELUAR",
+                                (15, h - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (200, 200, 200), 1)
+
+                    cv2.imshow(window_name, display_frame)
+                    key = cv2.waitKey(25) & 0xFF
+
+                # 1. Cek Pemicu: Spasi ditekan ATAU Sensor IR 1 mendeteksi kendaraan
+                ir_triggered = self.hw.is_vehicle_at_sensor1()
+                space_triggered = (key == ord(' ') or key == 13)
+
+                if ir_triggered or space_triggered:
+                    trigger_src = "SENSOR INFRARED 1" if ir_triggered else "TOMBOL [SPASI]"
+                    print(f"\n[TRIGGER] Kendaraan terdeteksi via {trigger_src}!")
+
+                    if getattr(config, 'SHOW_PREVIEW', True) and current_frame is not None:
+                        # Feedback visual sejenak bahwa foto sedang diproses
+                        feedback = current_frame.copy()
+                        fh, fw = feedback.shape[:2]
+                        cv2.rectangle(feedback, (0, 0), (fw, fh), (0, 255, 0), 4)
+                        cv2.putText(feedback, "MEMOTRET & MEMPROSES PLAT NOMOR...", (25, fh // 2),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                        cv2.imshow(window_name, feedback)
+                        cv2.waitKey(150)
+
+                    self.process_dual_verification(frame=current_frame)
+
+                # 2. Cek Pemicu Tombol Keyboard [M] atau Tombol Push Button Fisik
+                if (key == ord('m') or key == ord('M')) or self.hw.is_button_pressed():
                     self.handle_manual_override()
 
-                # 4. Pemicu Remote Web: Cek apakah ada perintah buka palang dari Web Dashboard via Supabase
+                # 3. Cek Tombol Keluar [Q] atau ESC
+                if key == ord('q') or key == ord('Q') or key == 27:
+                    print("\n[USER] Menutup aplikasi melalui jendela kamera...")
+                    break
+
+                # 4. Pemicu Kartu: Jika pengendara men-tap RFID duluan sebelum IR
+                scanned_rfid = self.hw.get_scanned_rfid()
+                if scanned_rfid:
+                    self.process_dual_verification(initial_rfid=scanned_rfid, frame=current_frame)
+
+                # 5. Pemicu Remote Web: Cek apakah ada perintah buka palang dari Web Dashboard via Supabase
                 now_t = time.time()
                 if now_t - last_remote_check >= 1.0:
                     last_remote_check = now_t
@@ -538,7 +640,8 @@ class SmartParkingExitGate:
                     if remote_cmd:
                         self.handle_web_remote_override(remote_cmd)
 
-                time.sleep(0.05)
+                if not getattr(config, 'SHOW_PREVIEW', True):
+                    time.sleep(0.05)
 
         except KeyboardInterrupt:
             print("\n[STOP] Menghentikan sistem Gerbang Keluar...")
@@ -547,6 +650,11 @@ class SmartParkingExitGate:
 
     def cleanup(self):
         """Lepaskan seluruh resource hardware dan kamera."""
+        if getattr(config, 'SHOW_PREVIEW', True):
+            try:
+                cv2.destroyAllWindows()
+            except Exception:
+                pass
         if self.cap and self.cap.isOpened():
             self.cap.release()
         self.hw.cleanup()
