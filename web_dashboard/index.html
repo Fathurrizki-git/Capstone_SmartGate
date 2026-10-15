@@ -599,7 +599,7 @@ body.modal-open{overflow:hidden}
           <span data-icon="search" data-size="16" class="muted"></span>
           <input type="search" id="global-q" placeholder="Cari plat / nama..." aria-label="Cari kendaraan">
         </form>
-        <label class="chip switch" id="live-chip" title="Simulasi data real-time">
+        <label class="chip switch" id="live-chip" title="Sinkronisasi Real-Time Supabase">
           <span class="live-dot"></span><span>Live</span>
           <input type="checkbox" id="live-toggle"><span class="track"></span>
         </label>
@@ -809,7 +809,7 @@ body.modal-open{overflow:hidden}
         <div class="card">
           <div class="card-head">
             <div><div class="card-title">Real-Time Camera</div><div class="card-sub">CAM-01 &bull; Gerbang Masuk FT Untirta</div></div>
-            <span class="chip" id="cam-status"><span class="live-dot" style="background:var(--green)"></span>Simulasi</span>
+            <span class="chip" id="cam-status"><span class="live-dot" style="background:var(--green)"></span>Standby (Kamera ALPR)</span>
           </div>
           <div class="cam">
             <div class="cam-sim"><div class="road"></div><div class="scan"></div></div>
@@ -941,20 +941,7 @@ body.modal-open{overflow:hidden}
   }
   function titleCase(s) { return s.toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
   function debounce(fn, ms) { var t; return function () { var a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(null, a); }, ms); }; }
-
-  // Seeded PRNG agar data dummy konsisten dalam satu hari
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      var t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
   var today0 = startOfDay(new Date());
-  var SEED = today0.getFullYear() * 10000 + (today0.getMonth() + 1) * 100 + today0.getDate();
-  var rnd = mulberry32(SEED);
-  function pick(arr, r) { return arr[Math.floor((r || rnd)() * arr.length)]; }
 
   /* =========================================================
      ICONS (inline SVG, tanpa file eksternal)
@@ -1003,63 +990,15 @@ body.modal-open{overflow:hidden}
   }
 
   /* =========================================================
-     DATA (simulasi output sistem ALPR)
+     DATA (100% dari Supabase vehicle_logs — tanpa data dummy)
      ========================================================= */
-  var CAPACITY = 100, OVERNIGHT = 35;
+  var CAPACITY = 100;
   var CATEGORIES = ['STUDENT', 'LECTURER', 'ACADEMIC COMMUNITY'];
   var CAT_COLORS = { 'STUDENT': '#0075ff', 'LECTURER': '#2cd9ff', 'ACADEMIC COMMUNITY': '#01b574' };
-  var FIRST = ['Ahmad', 'Budi', 'Citra', 'Dewi', 'Eka', 'Fajar', 'Gilang', 'Hana', 'Indra', 'Joko', 'Kartika', 'Lina', 'Muhammad', 'Nanda', 'Oktavia', 'Putri', 'Rizky', 'Salsa', 'Taufik', 'Umar', 'Vina', 'Wahyu', 'Yoga', 'Zahra', 'Andi', 'Bayu', 'Dimas', 'Farhan', 'Intan', 'Raka'];
-  var LASTN = ['Pratama', 'Saputra', 'Lestari', 'Wijaya', 'Hidayat', 'Nugraha', 'Permata', 'Ramadhan', 'Kusuma', 'Santoso', 'Maulana', 'Fitriani', 'Hakim', 'Siregar', 'Utami'];
-  var REGIONS = ['A', 'A', 'A', 'B', 'B', 'F', 'D', 'T'];
-  var LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ';
-
-  function weightedCat(r) {
-    var x = r();
-    return x < 0.60 ? 'STUDENT' : x < 0.82 ? 'LECTURER' : 'ACADEMIC COMMUNITY';
-  }
-  function makePlate(r) {
-    var len = 1 + Math.floor(r() * 3), suf = '';
-    for (var i = 0; i < len; i++) suf += LETTERS[Math.floor(r() * LETTERS.length)];
-    return pick(REGIONS, r) + ' ' + (1000 + Math.floor(r() * 9000)) + ' ' + suf;
-  }
-
-  var people = [
-    { name: 'Elkan Baggot', plate: 'B 3782 NHF', category: 'STUDENT' },
-    { name: 'Shabrina Zahra', plate: 'B 1234 VZN', category: 'STUDENT' },
-    { name: 'Rocky Alfanz', plate: 'B 3501 NZN', category: 'LECTURER' },
-    { name: 'Bundo', plate: 'A 9816 XY', category: 'ACADEMIC COMMUNITY' },
-    { name: 'Sohari', plate: 'A 2145 JZ', category: 'ACADEMIC COMMUNITY' }
-  ];
-  var usedPlates = {};
-  people.forEach(function (p) { p.inside = false; usedPlates[p.plate] = true; });
-  while (people.length < 90) {
-    var pl;
-    do { pl = makePlate(rnd); } while (usedPlates[pl]);
-    usedPlates[pl] = true;
-    people.push({ name: pick(FIRST) + ' ' + pick(LASTN), plate: pl, category: weightedCat(rnd), inside: false });
-  }
-
-  var seq = 0;
-  function choosePerson(r) {
-    var inside = people.filter(function (p) { return p.inside; });
-    var outside = people.filter(function (p) { return !p.inside; });
-    var wantOut;
-    if (!inside.length) wantOut = false;
-    else if (!outside.length || inside.length + OVERNIGHT >= CAPACITY) wantOut = true;
-    else wantOut = r() < 0.42;
-    var pool = wantOut ? inside : outside;
-    return pool[Math.floor(r() * pool.length)];
-  }
-  function makeLog(person, ts, r) {
-    var dir = person.inside ? 'OUT' : 'IN';
-    person.inside = !person.inside;
-    var conf = r() < 0.05 ? 70 + Math.floor(r() * 10) : 85 + Math.floor(r() * 15);
-    return { id: ++seq, ts: ts, name: person.name, plate: person.plate, category: person.category, dir: dir, conf: conf };
-  }
 
   var state = {
-    logs: [],               // terbaru di index 0
-    alerts: [],
+    logs: [],               // terbaru di index 0 (hasil query Supabase)
+    alerts: [],             // diturunkan dari logs (lihat buildAlerts)
     range: '1d',
     page: 1,
     perPage: 10,
@@ -1068,47 +1007,61 @@ body.modal-open{overflow:hidden}
     alertFilter: 'all',
     route: null,
     newIds: {},
-    occAlerted: false
+    loaded: false           // true setelah load pertama dari Supabase
   };
 
-  (function seedLogs() {
-    var now = new Date();
-    var six = new Date(today0.getTime() + 6 * 3600e3);
-    var start = now.getTime() - six.getTime() > 3600e3 ? six : today0;
-    var span = Math.max(60e3, now.getTime() - start.getTime());
-    var times = [];
-    for (var i = 0; i < 126; i++) times.push(start.getTime() + rnd() * span);
-    times.sort(function (a, b) { return a - b; });
-    var arr = times.map(function (t) { return makeLog(choosePerson(rnd), new Date(t), rnd); });
-    state.logs = arr.reverse();
+  // Status baca/hapus notifikasi disimpan di browser (per id log)
+  var ALERT_STORE = 'spg_alert_meta';
+  var alertMeta = (function () {
+    try {
+      var o = JSON.parse(localStorage.getItem(ALERT_STORE) || '{}');
+      return { read: o.read || {}, dismissed: o.dismissed || {} };
+    } catch (e) { return { read: {}, dismissed: {} }; }
   })();
+  var derivedAlertIds = [];
+  function syncAlertMeta() {
+    var present = {};
+    state.alerts.forEach(function (a) { present[a.id] = true; if (a.read) alertMeta.read[a.id] = 1; });
+    derivedAlertIds.forEach(function (id) { if (!present[id]) alertMeta.dismissed[id] = 1; });
+    try { localStorage.setItem(ALERT_STORE, JSON.stringify(alertMeta)); } catch (e) { }
+  }
 
-  var alertSeq = 0;
-  function addAlert(type, title, desc, ts, read, tag, plate, canOpen) {
-    var a = {
-      id: ++alertSeq,
-      type: type,
-      title: title,
-      desc: desc,
-      ts: ts || new Date(),
-      read: !!read,
-      tag: tag || '',
-      plate: plate || '',
-      canOpen: canOpen !== undefined ? canOpen : (type === 'danger' || type === 'warning')
-    };
-    state.alerts.unshift(a);
+  // Ubah satu baris log menjadi notifikasi keamanan (atau null jika normal)
+  function alertFromLog(l) {
+    var a = { id: l.id, ts: l.ts, plate: l.plate, read: !!alertMeta.read[l.id], canOpen: true };
+    if (l.method === 'WEB_MANUAL' || l.method === 'MANUAL') {
+      a.type = 'info'; a.tag = 'MANUAL OPEN'; a.canOpen = false;
+      a.title = l.method === 'WEB_MANUAL' ? 'Palang Gerbang Dibuka Manual via Website' : 'Palang Dibuka Manual (Push Button)';
+      a.desc = 'Palang keluar dibuka manual oleh petugas. Plat: ' + l.plate + '.';
+    } else if (l.status === 'TIDAK COCOK') {
+      a.type = 'danger'; a.tag = 'RFID MISMATCH';
+      a.title = 'Kartu RFID Tidak Sesuai (Beda Pemilik)';
+      a.desc = 'Plat ' + l.plate + ' terdeteksi, namun kartu RFID bukan milik pemilik terdaftar. Palang ditahan tertutup.';
+    } else if (l.status === 'TIDAK TERDAFTAR') {
+      a.type = 'warning'; a.tag = 'UNREGISTERED';
+      a.title = 'Kendaraan Tamu / Belum Terdaftar';
+      a.desc = 'Plat ' + l.plate + ' belum terdaftar di database civitas FT Untirta.';
+    } else if (l.conf < 80) {
+      a.type = 'warning'; a.tag = 'OCR FAILED';
+      a.title = 'Plat Nomor Tidak Terbaca Jelas';
+      a.desc = 'Plat ' + l.plate + ' terbaca dengan confidence rendah (' + l.conf + '%).';
+    } else {
+      return null;
+    }
     return a;
   }
-  // Notifikasi Keamanan Spesifik Sistem Smart Parking Exit Gate (Dual-Auth)
-  addAlert('danger', 'Kartu RFID Tidak Sesuai (Beda Pemilik)', 'Plat nomor B 1234 VZN terdeteksi di gerbang keluar, namun kartu RFID yang di-tap bukan milik pemilik terdaftar. Palang ditahan tertutup.', new Date(Date.now() - 12 * 60e3), false, 'RFID MISMATCH', 'B 1234 VZN', true);
-  addAlert('warning', 'Kendaraan Tamu / Belum Terdaftar', 'Plat nomor A 7891 KZ belum terdaftar di database civitas FT Untirta. Pengendara perlu verifikasi manual atau kartu tamu.', new Date(Date.now() - 38 * 60e3), false, 'UNREGISTERED', 'A 7891 KZ', true);
-  addAlert('warning', 'Plat Nomor Tidak Terbaca Jelas', 'Sensor 1 mendeteksi kendaraan mendekat, namun citra kamera buram / plat tidak terbaca (confidence <70%). Petugas perlu cek fisik plat.', new Date(Date.now() - 85 * 60e3), true, 'OCR FAILED', 'UNKNOWN', true);
-  addAlert('info', 'Palang Gerbang Dibuka Manual via Website', 'Palang keluar berhasil dibuka secara remote oleh Petugas melalui Web Dashboard setelah konfirmasi keamanan.', new Date(Date.now() - 160 * 60e3), true, 'MANUAL OPEN', 'B 3782 NHF', false);
+  function buildAlerts() {
+    var all = state.logs.map(alertFromLog).filter(Boolean);
+    derivedAlertIds = all.map(function (a) { return a.id; });
+    state.alerts = all.filter(function (a) { return !alertMeta.dismissed[a.id]; });
+  }
 
+  // Kendaraan dihitung "di dalam" jika log terakhir platnya berarah IN
   function occupancy() {
-    var inside = 0;
-    for (var i = 0; i < people.length; i++) if (people[i].inside) inside++;
-    return Math.min(CAPACITY, inside + OVERNIGHT);
+    var last = {}, inside = 0;
+    state.logs.forEach(function (l) { if (!(l.plate in last)) last[l.plate] = l.dir; });
+    for (var p in last) if (last[p] === 'IN') inside++;
+    return Math.min(CAPACITY, inside);
   }
   function todayLogs() { return state.logs.filter(function (l) { return isToday(l.ts); }); }
   function unreadCount() { return state.alerts.filter(function (a) { return !a.read; }).length; }
@@ -1211,7 +1164,8 @@ body.modal-open{overflow:hidden}
     var titleEl = $('#modal-title');
     if (titleEl) titleEl.textContent = 'Detail Kendaraan';
 
-    var person = people.filter(function (p) { return p.plate === l.plate; })[0];
+    var lastLogForPlate = state.logs.filter(function (x) { return x.plate === l.plate; })[0];
+    var isInside = lastLogForPlate ? lastLogForPlate.dir === 'IN' : false;
     var history = state.logs.filter(function (x) { return x.plate === l.plate; }).length;
     openModal(
       '<div class="plate">' + esc(l.plate) + '</div>' +
@@ -1223,7 +1177,7 @@ body.modal-open{overflow:hidden}
       '<dt>Waktu</dt><dd>' + esc(fmtLongDate(l.ts)) + ' &bull; ' + fmtHMS(l.ts) + ' WIB</dd>' +
       '<dt>Arah</dt><dd><span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span></dd>' +
       '<dt>Confidence</dt><dd>' + l.conf + '%' + (l.conf < 80 ? ' <span style="color:var(--orange)">(perlu verifikasi)</span>' : '') + '</dd>' +
-      '<dt>Status saat ini</dt><dd>' + (person && person.inside ? '<span class="up">Di dalam area parkir</span>' : '<span class="muted">Di luar area parkir</span>') + '</dd>' +
+      '<dt>Status saat ini</dt><dd>' + (isInside ? '<span class="up">Di dalam area parkir</span>' : '<span class="muted">Di luar area parkir</span>') + '</dd>' +
       '<dt>Total aktivitas</dt><dd>' + history + ' tercatat</dd>' +
       '</dl>'
     );
@@ -1496,21 +1450,21 @@ body.modal-open{overflow:hidden}
       return { labels: labels, tips: tips, inD: inD, outD: outD, unit: 'per 5 menit', sub: '60 menit terakhir (interval 5 menit)' };
     }
     if (range === '1m') {
-      var r2 = mulberry32(SEED + 7);
       for (i = 29; i >= 0; i--) {
         var d = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() - i);
+        var dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        var dayEnd = dayStart + 86400000;
         labels.push(d.getDate() + ' ' + MONTHS[d.getMonth()]);
         tips.push(fmtLongDate(d));
-        if (i === 0) {
-          var tl = todayLogs();
-          inD.push(tl.filter(function (l) { return l.dir === 'IN'; }).length);
-          outD.push(tl.filter(function (l) { return l.dir === 'OUT'; }).length);
-        } else {
-          var wk = d.getDay() === 0 || d.getDay() === 6;
-          var vin = wk ? 15 + Math.floor(r2() * 25) : 70 + Math.floor(r2() * 45);
-          inD.push(vin);
-          outD.push(Math.max(0, vin - 4 + Math.floor(r2() * 8)));
-        }
+        var countIn = 0, countOut = 0;
+        state.logs.forEach(function (l) {
+          var t = l.ts.getTime();
+          if (t >= dayStart && t < dayEnd) {
+            if (l.dir === 'IN') countIn++; else countOut++;
+          }
+        });
+        inD.push(countIn);
+        outD.push(countOut);
       }
       return { labels: labels, tips: tips, inD: inD, outD: outD, unit: 'per hari', sub: '30 hari terakhir' };
     }
@@ -1756,16 +1710,27 @@ body.modal-open{overflow:hidden}
     renderLastDetection();
   }
   function renderLastDetection() {
-    var l = state.logs[0];
-    if (!l) return;
-    $('#det-plate').textContent = l.plate;
-    $('#det-label').textContent = l.dir + ' \u2022 ' + l.conf + '%';
-    $('#det-box').style.borderColor = l.conf < 80 ? 'var(--orange)' : 'var(--green)';
-    $('#det-label').style.background = l.conf < 80 ? 'var(--orange)' : 'var(--green)';
-    $('#ld-plate').textContent = l.plate;
-    $('#ld-name').textContent = l.name;
-    $('#ld-dir').innerHTML = '<span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span>';
-    $('#ld-time').textContent = fmtHM(l.ts);
+    var l = state.logs && state.logs[0];
+    if (!l) {
+      if ($('#det-plate')) $('#det-plate').textContent = '-';
+      if ($('#det-label')) { $('#det-label').textContent = 'STANDBY'; $('#det-label').style.background = 'var(--blue)'; }
+      if ($('#det-box')) $('#det-box').style.borderColor = 'var(--border)';
+      if ($('#ld-plate')) $('#ld-plate').textContent = '-';
+      if ($('#ld-name')) $('#ld-name').textContent = 'Belum ada kendaraan';
+      if ($('#ld-dir')) $('#ld-dir').innerHTML = '<span class="pill in">-</span>';
+      if ($('#ld-time')) $('#ld-time').textContent = '-';
+      return;
+    }
+    if ($('#det-plate')) $('#det-plate').textContent = l.plate;
+    if ($('#det-label')) {
+      $('#det-label').textContent = l.dir + ' \u2022 ' + l.conf + '%';
+      $('#det-label').style.background = l.conf < 80 ? 'var(--orange)' : 'var(--green)';
+    }
+    if ($('#det-box')) $('#det-box').style.borderColor = l.conf < 80 ? 'var(--orange)' : 'var(--green)';
+    if ($('#ld-plate')) $('#ld-plate').textContent = l.plate;
+    if ($('#ld-name')) $('#ld-name').textContent = l.name;
+    if ($('#ld-dir')) $('#ld-dir').innerHTML = '<span class="pill ' + l.dir.toLowerCase() + '">' + l.dir + '</span>';
+    if ($('#ld-time')) $('#ld-time').textContent = fmtHM(l.ts);
   }
 
   /* =========================================================
@@ -1864,10 +1829,12 @@ body.modal-open{overflow:hidden}
      ========================================================= */
   var camStream = null, camStarting = false;
   function setCamUI(on) {
-    $('#cam-start').disabled = on;
-    $('#cam-stop').disabled = !on;
-    $('#cam-video').hidden = !on;
-    $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Webcam Aktif' : 'Simulasi');
+    if ($('#cam-start')) $('#cam-start').disabled = on;
+    if ($('#cam-stop')) $('#cam-stop').disabled = !on;
+    if ($('#cam-video')) $('#cam-video').hidden = !on;
+    if ($('#cam-status')) {
+      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Live Webcam Aktif' : 'Standby (Kamera ALPR)');
+    }
   }
   function startCam() {
     if (camStream || camStarting) return;
@@ -1959,7 +1926,7 @@ body.modal-open{overflow:hidden}
   }
 
   /* =========================================================
-     LIVE SUPABASE LOGS & SIMULATION
+     LIVE SUPABASE LOGS & REAL-TIME SYNC
      ========================================================= */
   var liveTimer = null;
   async function loadSupabaseLogs() {
@@ -1975,23 +1942,30 @@ body.modal-open{overflow:hidden}
       });
       if (res.ok) {
         var rows = await res.json();
-        if (rows && rows.length > 0) {
-          state.logs = rows.map(function (r) {
-            return {
-              id: r.id,
-              ts: new Date(r.created_at),
-              name: r.name || 'Civitas Untirta',
-              plate: r.plate,
-              category: r.category || 'STUDENT',
-              dir: r.direction || 'IN',
-              conf: Math.round(Number(r.confidence) || 90),
-              status: r.status || 'TERDAFTAR',
-              nim_nip: r.nim_nip || '-'
-            };
-          });
-          renderCurrent();
-          return true;
+        var prevFirstId = state.logs && state.logs[0] ? state.logs[0].id : null;
+        state.logs = (rows || []).map(function (r) {
+          return {
+            id: r.id,
+            ts: new Date(r.created_at),
+            name: r.name || 'Civitas Untirta',
+            plate: r.plate,
+            category: r.category || 'STUDENT',
+            dir: r.direction || 'IN',
+            conf: Math.round(Number(r.confidence) || 90),
+            status: r.status || 'TERDAFTAR',
+            nim_nip: r.nim_nip || '-',
+            method: r.method || 'ALPR'
+          };
+        });
+        state.loaded = true;
+        if (state.logs.length > 0 && prevFirstId && state.logs[0].id !== prevFirstId) {
+          state.newIds = {};
+          state.newIds[state.logs[0].id] = true;
+          setTimeout(function () { state.newIds = {}; }, 1700);
         }
+        buildAlerts();
+        renderCurrent();
+        return true;
       }
     } catch (err) {
       console.warn('Gagal memuat log dari Supabase:', err);
@@ -2001,40 +1975,15 @@ body.modal-open{overflow:hidden}
 
   async function liveTick() {
     if (!currentUser() || state.route === 'login') return;
-    var loaded = await loadSupabaseLogs();
-    if (loaded) return;
-
-    var person = choosePerson(Math.random);
-    if (!person) return;
-    var log = makeLog(person, new Date(), Math.random);
-    state.logs.unshift(log);
-    if (state.logs.length > 2000) state.logs.length = 2000;
-    state.newIds = {}; state.newIds[log.id] = true;
-    setTimeout(function () { delete state.newIds[log.id]; }, 1700);
-    // Deteksi & Peringatan Keamanan Otomatis
-    if (log.conf < 80) {
-      addAlert('warning', 'Plat Nomor Tidak Terbaca Jelas', 'Plat ' + log.plate + ' terbaca dengan confidence rendah (' + log.conf + '%). Mohon cek fisik plat kendaraan.', new Date(), false, 'OCR FAILED', log.plate, true);
-      toast('Peringatan: Plat ' + log.plate + ' terbaca buram / tidak valid', 'error');
-    } else if (Math.random() < 0.08) {
-      addAlert('danger', 'Kartu RFID Tidak Sesuai (Beda Pemilik)', 'Plat nomor ' + log.plate + ' terdeteksi di gerbang keluar, namun kartu RFID yang di-tap bukan milik pemilik terdaftar. Palang ditahan tertutup.', new Date(), false, 'RFID MISMATCH', log.plate, true);
-      toast('Peringatan Keamanan: Kartu RFID tidak cocok untuk ' + log.plate, 'error');
-    } else if (Math.random() < 0.08) {
-      addAlert('warning', 'Kendaraan Tamu / Belum Terdaftar', 'Kendaraan dengan plat ' + log.plate + ' belum terdaftar dalam database civitas FT Untirta.', new Date(), false, 'UNREGISTERED', log.plate, true);
-      toast('Info: Kendaraan tamu ' + log.plate + ' terdeteksi di gerbang keluar', 'info');
-    }
-
-    var occ = occupancy();
-    if (occ / CAPACITY >= 0.9 && !state.occAlerted) {
-      state.occAlerted = true;
-      addAlert('danger', 'Parking almost full', 'Kapasitas parkir mencapai ' + Math.round(occ / CAPACITY * 100) + '% (' + occ + '/' + CAPACITY + ').');
-    } else if (occ / CAPACITY < 0.85) state.occAlerted = false;
-    renderCurrent();
+    await loadSupabaseLogs();
   }
   function setLive(on) {
     clearInterval(liveTimer); liveTimer = null;
-    if (on) liveTimer = setInterval(liveTick, 6000);
-    $('#live-toggle').checked = on;
-    $('#live-chip').classList.toggle('live-on', on);
+    if (on) liveTimer = setInterval(liveTick, 3000);
+    var toggle = $('#live-toggle');
+    if (toggle) toggle.checked = on;
+    var chip = $('#live-chip');
+    if (chip) chip.classList.toggle('live-on', on);
     try { localStorage.setItem('spg_live', on ? '1' : '0'); } catch (e) { }
   }
 
