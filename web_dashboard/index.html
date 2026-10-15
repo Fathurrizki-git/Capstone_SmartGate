@@ -823,7 +823,8 @@ body.modal-open{overflow:hidden}
           </div>
           <div class="cam-actions">
             <button type="button" class="btn btn-primary" id="cam-start"><span data-icon="camera" data-size="15"></span>Gunakan Webcam</button>
-            <button type="button" class="btn btn-ghost" id="cam-stop" disabled><span data-icon="x" data-size="15"></span>Hentikan Webcam</button>
+            <button type="button" class="btn btn-ghost" id="cam-stop" disabled><span data-icon="x" data-size="15"></span>Hentikan</button>
+            <button type="button" class="btn btn-ghost" id="cam-cfg"><span data-icon="settings" data-size="15"></span>URL Cloudflare</button>
             <button type="button" class="btn btn-ghost" id="cam-snap"><span data-icon="download" data-size="15"></span>Snapshot</button>
           </div>
           <div class="last-det">
@@ -848,6 +849,27 @@ body.modal-open{overflow:hidden}
       <button class="icon-btn" id="modal-close" aria-label="Tutup" data-icon="x"></button>
     </div>
     <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal Konfigurasi URL Cloudflare Tunnel / Stream -->
+<div class="modal" id="cam-cfg-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cam-cfg-title">
+  <div class="modal-card" style="max-width:480px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 id="cam-cfg-title" class="card-title">Konfigurasi Kamera ALPR (Cloudflare Tunnel)</h3>
+      <button class="icon-btn" id="cam-cfg-close" aria-label="Tutup" data-icon="x"></button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-400);line-height:1.5;margin-bottom:14px">
+      Masukkan URL HTTPS dari Cloudflare Tunnel (misal: <code>https://xxxx.trycloudflare.com/video_feed</code>) agar siaran kamera Raspberry Pi / Laptop tampil langsung di Netlify tanpa terblokir keamanan browser.
+    </p>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px">URL Stream Kamera (HTTPS / Localhost):</label>
+      <input type="text" id="input-cam-url" class="input" style="width:100%" placeholder="https://xxxx.trycloudflare.com/video_feed">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" class="btn btn-ghost" id="btn-cam-reset">Reset (Lokal)</button>
+      <button type="button" class="btn btn-primary" id="btn-cam-save">Simpan & Sambungkan</button>
+    </div>
   </div>
 </div>
 
@@ -1827,26 +1849,46 @@ body.modal-open{overflow:hidden}
   }
 
   /* =========================================================
-     CAMERA (Live Python Stream Server & Webcam Browser)
+     CAMERA (Live Python Stream Server, Cloudflare Tunnel & Webcam)
      ========================================================= */
   var camStream = null, camStarting = false, isPythonStreamActive = false;
-  var STREAM_FEED_URL = 'http://localhost:5050/video_feed';
-  var STREAM_STATUS_URL = 'http://localhost:5050/status';
+
+  function getCamStreamURL() {
+    var saved = localStorage.getItem('spg_cam_url');
+    if (saved && saved.trim()) return saved.trim();
+    if (location.protocol === 'https:') {
+      return ''; // Pada Netlify HTTPS, tunggu URL Cloudflare HTTPS yang disetel pengguna
+    }
+    return 'http://localhost:5050/video_feed';
+  }
 
   function checkPythonStream() {
     var img = $('#cam-stream');
     if (!img) return;
 
+    var feedUrl = getCamStreamURL();
+    if (!feedUrl) {
+      isPythonStreamActive = false;
+      img.hidden = true;
+      img.src = '';
+      if (!camStream && $('#cam-status')) {
+        $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--blue)"></span>Standby (Klik URL Cloudflare untuk sambungkan)';
+      }
+      return;
+    }
+
     var probe = new Image();
     probe.onload = function () {
       isPythonStreamActive = true;
-      img.src = STREAM_FEED_URL;
+      img.src = feedUrl;
       img.hidden = false;
       if ($('#cam-video')) $('#cam-video').hidden = true;
       if ($('#cam-start')) $('#cam-start').disabled = true;
       if ($('#cam-stop')) $('#cam-stop').disabled = false;
       if ($('#cam-status')) {
-        $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--green)"></span>Live Kamera ALPR (Python Terhubung)';
+        var isTunnel = feedUrl.includes('trycloudflare.com') || feedUrl.startsWith('https://');
+        var label = isTunnel ? 'Live Kamera ALPR (Cloudflare Tunnel Terhubung)' : 'Live Kamera ALPR (Lokal Terhubung)';
+        $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--green)"></span>' + label;
       }
     };
     probe.onerror = function () {
@@ -1861,7 +1903,49 @@ body.modal-open{overflow:hidden}
         }
       }
     };
-    probe.src = STREAM_STATUS_URL + '?t=' + Date.now();
+    var statusUrl = feedUrl.replace(/\/video_feed\/?$/i, '') + '/status';
+    probe.src = statusUrl + '?t=' + Date.now();
+  }
+
+  function openCamCfgModal() {
+    var cur = localStorage.getItem('spg_cam_url') || '';
+    if ($('#input-cam-url')) $('#input-cam-url').value = cur;
+    if ($('#cam-cfg-modal')) {
+      $('#cam-cfg-modal').hidden = false;
+      updateModalScrollLock();
+      if ($('#input-cam-url')) $('#input-cam-url').focus();
+    }
+  }
+
+  function closeCamCfgModal() {
+    if ($('#cam-cfg-modal')) {
+      $('#cam-cfg-modal').hidden = true;
+      updateModalScrollLock();
+    }
+  }
+
+  function saveCamCfg() {
+    var val = ($('#input-cam-url') ? $('#input-cam-url').value : '').trim();
+    if (val && !val.includes('/video_feed') && !val.endsWith('.jpg')) {
+      val = val.replace(/\/+$/, '') + '/video_feed';
+    }
+    if (val) {
+      localStorage.setItem('spg_cam_url', val);
+      toast('URL Kamera berhasil disimpan: ' + val, 'success');
+    } else {
+      localStorage.removeItem('spg_cam_url');
+      toast('URL Kamera direset ke default.', 'info');
+    }
+    closeCamCfgModal();
+    checkPythonStream();
+  }
+
+  function resetCamCfg() {
+    localStorage.removeItem('spg_cam_url');
+    if ($('#input-cam-url')) $('#input-cam-url').value = '';
+    toast('URL Kamera direset ke default.', 'info');
+    closeCamCfgModal();
+    checkPythonStream();
   }
 
   function setCamUI(on) {
@@ -1874,7 +1958,7 @@ body.modal-open{overflow:hidden}
       isPythonStreamActive = false;
     }
     if ($('#cam-status')) {
-      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Live Webcam Browser Aktif' : (isPythonStreamActive ? 'Live Kamera ALPR (Python Terhubung)' : 'Standby (Kamera ALPR)'));
+      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Live Webcam Browser Aktif' : (isPythonStreamActive ? 'Live Kamera ALPR Terhubung' : 'Standby (Kamera ALPR)'));
     }
   }
 
@@ -2409,16 +2493,23 @@ body.modal-open{overflow:hidden}
     $('#confirm-gate-proceed').addEventListener('click', executeRemoteGateOpen);
 
     // Camera
-    $('#cam-start').addEventListener('click', startCam);
-    $('#cam-stop').addEventListener('click', function () { stopCam(); toast('Webcam dihentikan.', 'info'); });
-    $('#cam-snap').addEventListener('click', snapshot);
+    if ($('#cam-start')) $('#cam-start').addEventListener('click', startCam);
+    if ($('#cam-stop')) $('#cam-stop').addEventListener('click', function () { stopCam(); toast('Kamera dihentikan.', 'info'); });
+    if ($('#cam-cfg')) $('#cam-cfg').addEventListener('click', openCamCfgModal);
+    if ($('#cam-cfg-close')) $('#cam-cfg-close').addEventListener('click', closeCamCfgModal);
+    if ($('#btn-cam-save')) $('#btn-cam-save').addEventListener('click', saveCamCfg);
+    if ($('#btn-cam-reset')) $('#btn-cam-reset').addEventListener('click', resetCamCfg);
+    if ($('#cam-cfg-modal')) {
+      $('#cam-cfg-modal').addEventListener('click', function (e) { if (e.target === this) closeCamCfgModal(); });
+    }
+    if ($('#cam-snap')) $('#cam-snap').addEventListener('click', snapshot);
 
     // Modal
     $('#modal-close').addEventListener('click', closeModal);
     $('#modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
 
     // Prevent backdrop scroll wheel/touch
-    ['#modal', '#confirm-gate-modal', '#notif-summary-modal'].forEach(function (id) {
+    ['#modal', '#confirm-gate-modal', '#notif-summary-modal', '#cam-cfg-modal'].forEach(function (id) {
       var m = $(id);
       if (!m) return;
       m.addEventListener('wheel', function (e) {
@@ -2468,6 +2559,7 @@ body.modal-open{overflow:hidden}
         closeModal();
         closeConfirmGateModal();
         closeNotifSummaryModal();
+        closeCamCfgModal();
         document.body.classList.remove('sb-open');
       }
     });

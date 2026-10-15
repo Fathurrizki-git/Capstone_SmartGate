@@ -1,9 +1,14 @@
 """
-MJPEG HTTP Streaming Server untuk Kamera ALPR Smart Parking Gate FT Untirta.
-Menyiarkan live feed webcam langsung ke Web Dashboard secara real-time.
+MJPEG HTTP Streaming Server & Cloudflare Tunnel untuk Kamera ALPR Smart Parking Gate FT Untirta.
+Menyiarkan live feed webcam langsung ke Web Dashboard secara real-time via Localhost & HTTPS Cloudflare Tunnel.
 """
 
+import os
+import re
+import sys
 import time
+import shutil
+import subprocess
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import cv2
@@ -79,30 +84,76 @@ class MJPEGHandler(BaseHTTPRequestHandler):
 
 
 class VideoStreamServer:
-    """Server streaming HTTP MJPEG background untuk menghubungkan kamera ke Web Dashboard."""
+    """Server streaming HTTP MJPEG background & Cloudflare Tunnel HTTPS otomatis."""
     def __init__(self, host='0.0.0.0', port=5050):
         self.host = host
         self.port = port
         self.server = None
-        self.thread = None
+        self.server_thread = None
+        self.tunnel_process = None
+        self.tunnel_url = None
 
     def start(self):
         try:
             self.server = HTTPServer((self.host, self.port), MJPEGHandler)
-            self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
-            self.thread.start()
+            self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+            self.server_thread.start()
             print(f"[OK] Live Camera Web Stream aktif di http://localhost:{self.port}/video_feed")
+
+            # Nyalakan Cloudflare Tunnel otomatis jika tersedia
+            self._start_cloudflare_tunnel()
         except Exception as e:
             print(f"[WARN] Gagal menyalakan Web Stream Server pada port {self.port}: {e}")
+
+    def _start_cloudflare_tunnel(self):
+        """Mencari cloudflared dan membuat URL HTTPS gratis untuk Netlify."""
+        exe_path = None
+        if os.path.isfile("cloudflared.exe"):
+            exe_path = os.path.abspath("cloudflared.exe")
+        elif shutil.which("cloudflared"):
+            exe_path = shutil.which("cloudflared")
+
+        if not exe_path:
+            return
+
+        def _run_tunnel():
+            try:
+                cmd = [exe_path, 'tunnel', '--url', f'http://localhost:{self.port}']
+                self.tunnel_process = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+                )
+
+                while self.tunnel_process and self.tunnel_process.poll() is None:
+                    line = self.tunnel_process.stdout.readline()
+                    if not line:
+                        break
+                    m = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
+                    if m and not self.tunnel_url:
+                        self.tunnel_url = m.group(0)
+                        feed_url = f"{self.tunnel_url}/video_feed"
+                        print("\n" + "=" * 70)
+                        print("  [CLOUDFLARE TUNNEL AKTIF - RESMI HTTPS UNTUK NETLIFY]")
+                        print(f"  URL Kamera: {feed_url}")
+                        print("  Salin URL di atas ke tombol [URL Kamera] pada Web Dashboard!")
+                        print("=" * 70 + "\n")
+            except Exception as e:
+                print(f"[WARN] Cloudflare Tunnel mengalami kendala: {e}")
+
+        t = threading.Thread(target=_run_tunnel, daemon=True)
+        t.start()
 
     def update_frame(self, frame):
         GLOBAL_HUB.update_frame(frame)
 
     def stop(self):
+        if self.tunnel_process:
+            try:
+                self.tunnel_process.terminate()
+            except Exception:
+                pass
         if self.server:
             try:
                 self.server.shutdown()
                 self.server.server_close()
             except Exception:
                 pass
-
