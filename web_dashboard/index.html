@@ -449,7 +449,7 @@ h1,h2,h3,p{margin:0}
   background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(255,255,255,.25) 30px 50px) center/6px 100% no-repeat,#151b33}
 .cam-sim .scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(44,217,255,.8),transparent);animation:scan 3.5s linear infinite}
 @keyframes scan{from{top:0}to{top:100%}}
-.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.cam video, .cam img.cam-stream{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 .cam-ov{position:absolute;inset:0;pointer-events:none;padding:16px;display:flex;flex-direction:column;justify-content:space-between;font-size:12px;font-weight:600;text-shadow:0 1px 2px #000}
 .cam-ov .row{display:flex;justify-content:space-between;align-items:center}
 .rec{display:inline-flex;align-items:center;gap:6px;color:#ff6b6e}
@@ -813,6 +813,7 @@ body.modal-open{overflow:hidden}
           </div>
           <div class="cam">
             <div class="cam-sim"><div class="road"></div><div class="scan"></div></div>
+            <img id="cam-stream" class="cam-stream" alt="Live Camera ALPR" hidden>
             <video id="cam-video" playsinline muted hidden></video>
             <div class="cam-ov">
               <div class="row"><span class="rec">REC</span><span id="cam-time">--</span></div>
@@ -1708,6 +1709,7 @@ body.modal-open{overflow:hidden}
     $('#mark-all').disabled = unreadCount() === 0;
     $('#clear-read').disabled = !state.alerts.some(function (a) { return a.read; });
     renderLastDetection();
+    checkPythonStream();
   }
   function renderLastDetection() {
     var l = state.logs && state.logs[0];
@@ -1825,17 +1827,57 @@ body.modal-open{overflow:hidden}
   }
 
   /* =========================================================
-     CAMERA (webcam opsional)
+     CAMERA (Live Python Stream Server & Webcam Browser)
      ========================================================= */
-  var camStream = null, camStarting = false;
+  var camStream = null, camStarting = false, isPythonStreamActive = false;
+  var STREAM_FEED_URL = 'http://localhost:5050/video_feed';
+  var STREAM_STATUS_URL = 'http://localhost:5050/status';
+
+  function checkPythonStream() {
+    var img = $('#cam-stream');
+    if (!img) return;
+
+    var probe = new Image();
+    probe.onload = function () {
+      isPythonStreamActive = true;
+      img.src = STREAM_FEED_URL;
+      img.hidden = false;
+      if ($('#cam-video')) $('#cam-video').hidden = true;
+      if ($('#cam-start')) $('#cam-start').disabled = true;
+      if ($('#cam-stop')) $('#cam-stop').disabled = false;
+      if ($('#cam-status')) {
+        $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--green)"></span>Live Kamera ALPR (Python Terhubung)';
+      }
+    };
+    probe.onerror = function () {
+      isPythonStreamActive = false;
+      img.hidden = true;
+      img.src = '';
+      if (!camStream) {
+        if ($('#cam-start')) $('#cam-start').disabled = false;
+        if ($('#cam-stop')) $('#cam-stop').disabled = true;
+        if ($('#cam-status')) {
+          $('#cam-status').innerHTML = '<span class="live-dot" style="background:var(--blue)"></span>Standby (Kamera ALPR)';
+        }
+      }
+    };
+    probe.src = STREAM_STATUS_URL + '?t=' + Date.now();
+  }
+
   function setCamUI(on) {
     if ($('#cam-start')) $('#cam-start').disabled = on;
     if ($('#cam-stop')) $('#cam-stop').disabled = !on;
     if ($('#cam-video')) $('#cam-video').hidden = !on;
+    if (on && $('#cam-stream')) {
+      $('#cam-stream').hidden = true;
+      $('#cam-stream').src = '';
+      isPythonStreamActive = false;
+    }
     if ($('#cam-status')) {
-      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Live Webcam Aktif' : 'Standby (Kamera ALPR)');
+      $('#cam-status').innerHTML = '<span class="live-dot" style="background:' + (on ? 'var(--red)' : 'var(--green)') + '"></span>' + (on ? 'Live Webcam Browser Aktif' : (isPythonStreamActive ? 'Live Kamera ALPR (Python Terhubung)' : 'Standby (Kamera ALPR)'));
     }
   }
+
   function startCam() {
     if (camStream || camStarting) return;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1843,7 +1885,7 @@ body.modal-open{overflow:hidden}
       return;
     }
     camStarting = true;
-    $('#cam-start').disabled = true;
+    if ($('#cam-start')) $('#cam-start').disabled = true;
     navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
       camStarting = false;
       if (state.route !== 'security') { stream.getTracks().forEach(function (t) { t.stop(); }); setCamUI(false); return; }
@@ -1853,7 +1895,7 @@ body.modal-open{overflow:hidden}
       setCamUI(true);
       var p = v.play();
       if (p && p.catch) p.catch(function () { });
-      toast('Webcam aktif.', 'success');
+      toast('Webcam browser aktif.', 'success');
     }).catch(function (err) {
       camStarting = false;
       setCamUI(false);
@@ -1861,20 +1903,45 @@ body.modal-open{overflow:hidden}
       toast('Tidak dapat mengakses webcam: ' + msg, 'error');
     });
   }
+
   function stopCam() {
-    if (camStream) { camStream.getTracks().forEach(function (t) { t.stop(); }); camStream = null; }
+    if (camStream) {
+      camStream.getTracks().forEach(function (t) { t.stop(); });
+      camStream = null;
+    }
     var v = document.getElementById('cam-video');
-    if (v) { try { v.pause(); } catch (e) { } v.srcObject = null; }
-    if (document.getElementById('cam-start')) setCamUI(false);
+    if (v) { try { v.pause(); } catch (e) { } v.srcObject = null; v.hidden = true; }
+
+    var img = document.getElementById('cam-stream');
+    if (img) { img.hidden = true; img.src = ''; }
+    isPythonStreamActive = false;
+
+    if (document.getElementById('cam-start')) document.getElementById('cam-start').disabled = false;
+    if (document.getElementById('cam-stop')) document.getElementById('cam-stop').disabled = true;
+    if (document.getElementById('cam-status')) {
+      document.getElementById('cam-status').innerHTML = '<span class="live-dot" style="background:var(--blue)"></span>Standby (Kamera ALPR)';
+    }
   }
+
   function snapshot() {
     var canvas = document.createElement('canvas');
     var v = $('#cam-video');
-    var w = (camStream && v.videoWidth) || 1280, h = (camStream && v.videoHeight) || 720;
+    var img = $('#cam-stream');
+    var w = 1280, h = 720;
+
+    if (camStream && v && v.videoWidth) {
+      w = v.videoWidth; h = v.videoHeight;
+    } else if (isPythonStreamActive && img && img.naturalWidth) {
+      w = img.naturalWidth; h = img.naturalHeight;
+    }
+
     canvas.width = w; canvas.height = h;
     var ctx = canvas.getContext('2d');
-    if (camStream && v.videoWidth) {
+
+    if (camStream && v && v.videoWidth) {
       ctx.drawImage(v, 0, 0, w, h);
+    } else if (isPythonStreamActive && img && img.naturalWidth) {
+      ctx.drawImage(img, 0, 0, w, h);
     } else {
       var g = ctx.createRadialGradient(w / 2, h * 1.2, 50, w / 2, h / 2, w);
       g.addColorStop(0, '#1d2a52'); g.addColorStop(1, '#03050f');

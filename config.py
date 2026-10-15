@@ -58,3 +58,5 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 SAVE_RESULTS = True                         # Simpan foto hasil deteksi ke folder output/
 OUTPUT_DIR = "output/"                      # Folder penyimpanan citra
 SHOW_PREVIEW = True                         # Set True untuk menampilkan jendela live kamera desktop
+STREAM_ENABLED = True                       # Siarkan live video ke Web Dashboard via HTTP MJPEG
+STREAM_PORT = 5050                          # Port streaming lokal (http://localhost:5050/video_feed)
