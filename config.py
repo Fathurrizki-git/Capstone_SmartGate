@@ -18,10 +18,10 @@ API_URL = "https://api.platerecognizer.com/v1/plate-reader/"
 API_REGIONS = ["id"]                       # Region Indonesia
 API_TIMEOUT = 8                            # Timeout request (detik)
 
-# ── Webcam USB ───────────────────────────────────
-CAMERA_INDEX = 0                            # 0 untuk Webcam USB utama
+CAMERA_INDEX = 1                            # Index webcam terdeteksi (1 atau 0)
 CAMERA_WIDTH = 640                          # Resolusi optimal untuk RPi 3B+ (hemat RAM & cepat)
 CAMERA_HEIGHT = 480
+MAX_IMAGE_SIZE = (1280, 720)                # Batas maksimal dimensi citra sebelum dikirim ke API
 JPEG_QUALITY = 85                           # Kualitas kompresi upload citra
 
 # ── GPIO Pin Mapping (BCM numbering pada RPi 3B+) ─

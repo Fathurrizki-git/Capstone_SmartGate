@@ -72,16 +72,32 @@ class SmartParkingExitGate:
         print("[OK] Gerbang keluar siap beroperasi dengan verifikasi PLAT + RFID!\n")
 
     def _init_camera(self):
-        """Buka koneksi Webcam USB."""
-        print(f"[INFO] Membuka Webcam USB index {config.CAMERA_INDEX}...")
-        self.cap = cv2.VideoCapture(config.CAMERA_INDEX)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAMERA_WIDTH)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAMERA_HEIGHT)
+        """Buka koneksi Webcam USB dengan auto-detect index dan backend DirectShow."""
+        indices_to_try = [config.CAMERA_INDEX, 1, 0, 2]
+        seen = set()
+        clean_indices = [x for x in indices_to_try if not (x in seen or seen.add(x))]
 
-        if not self.cap.isOpened():
-            print("[WARN] Webcam USB belum terdeteksi. Silakan periksa kabel USB.")
-        else:
-            print("[OK] Webcam USB terhubung dan siap.")
+        for idx in clean_indices:
+            # Di Windows, gunakan DirectShow terlebih dahulu agar stabil dan cepat
+            if sys.platform.startswith('win'):
+                self.cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+            else:
+                self.cap = cv2.VideoCapture(idx)
+
+            if not self.cap or not self.cap.isOpened():
+                self.cap = cv2.VideoCapture(idx)
+
+            if self.cap and self.cap.isOpened():
+                ret, test_frame = self.cap.read()
+                if ret and test_frame is not None:
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAMERA_WIDTH)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAMERA_HEIGHT)
+                    print(f"[OK] Webcam aktif dan terhubung pada index {idx} ({test_frame.shape[1]}x{test_frame.shape[0]}).")
+                    return
+                else:
+                    self.cap.release()
+
+        print("[WARN] Webcam USB belum terdeteksi. Silakan periksa koneksi webcam atau perizinan kamera.")
 
     def capture_frame(self):
         """Ambil 1 frame citra jernih dari webcam USB."""
@@ -414,16 +430,33 @@ class SmartParkingExitGate:
             self.hw.lcd.display_standby()
             return
 
+        # Simpan snapshot mentah untuk memudahkan pengecekan hasil pemotretan
+        if config.SAVE_RESULTS:
+            cv2.imwrite(os.path.join(config.OUTPUT_DIR, "latest_capture.jpg"), frame)
+
         api_res = self.api.recognize(frame)
-        if not api_res.get("success") or not api_res.get("results"):
-            print("  [--] Tidak ada plat nomor terdeteksi pada citra.")
+        if not api_res.get("success"):
+            err_msg = api_res.get("error") or "Koneksi ke Plate Recognizer API gagal"
+            print(f"  [API ERROR] {err_msg}")
+            self.hw.lcd.display(
+                " GAGAL KONEKSI OCR  ",
+                "PERIKSA INTERNET    ",
+                "TEKAN TOMBOL MANUAL ",
+                "HUBUNGI PETUGAS     "
+            )
+            time.sleep(2.0)
+            self.hw.lcd.display_standby()
+            return
+
+        if not api_res.get("results"):
+            print("  [--] Tidak ada plat nomor terdeteksi pada citra. Pastikan plat menghadap kamera & pencahayaan cukup.")
             self.hw.lcd.display(
                 "PLAT TIDAK TERBACA  ",
                 "DEKATKAN KENDARAAN  ",
                 "ATAU TEKAN TOMBOL   ",
                 "MANUAL OLEH PETUGAS "
             )
-            time.sleep(2.5)
+            time.sleep(2.0)
             self.hw.lcd.display_standby()
             return
 
@@ -432,11 +465,17 @@ class SmartParkingExitGate:
         conf = best.get("confidence", 0.0)
 
         if config.SAVE_RESULTS:
-            annotated = draw_results(frame, [best])
+            annotated = draw_results(frame.copy(), [best])
             fname = os.path.join(config.OUTPUT_DIR, f"exit_{int(time.time())}.jpg")
             cv2.imwrite(fname, annotated)
 
-        print(f"  [ALPR OK] Plat terdeteksi: {plate_text} (conf: {conf:.0%})")
+        print(f"  [ALPR OK \u2705] Plat terdeteksi: {plate_text} (Akurasi: {conf:.0%})")
+
+        # Tampilkan visual deteksi plat pada jendela kamera
+        if getattr(config, 'SHOW_PREVIEW', True):
+            annotated_disp = draw_results(frame.copy(), [best])
+            cv2.imshow("Smart Parking Gate ALPR - FT Untirta", annotated_disp)
+            cv2.waitKey(800)
 
         # 2. Ambil Kartu RFID
         rfid_uid = initial_rfid

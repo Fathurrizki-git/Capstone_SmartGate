@@ -119,7 +119,7 @@ class PlateRecognizerAPI:
         Resize jika terlalu besar untuk menghemat bandwidth.
         """
         h, w = image.shape[:2]
-        max_w, max_h = config.MAX_IMAGE_SIZE
+        max_w, max_h = getattr(config, 'MAX_IMAGE_SIZE', (1280, 720))
 
         # Resize jika terlalu besar
         if w > max_w or h > max_h:
