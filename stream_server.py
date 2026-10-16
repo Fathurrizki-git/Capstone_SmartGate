@@ -1,20 +1,37 @@
 """
-MJPEG HTTP Streaming Server & Cloudflare Tunnel untuk Kamera ALPR Smart Parking Gate FT Untirta.
-Menyiarkan live feed webcam langsung ke Web Dashboard secara real-time via Localhost & HTTPS Cloudflare Tunnel.
-Mendukung concurrent ThreadedHTTPServer, /video_feed (MJPEG), dan /snapshot (Fast JPEG Polling) yang kebal terhadap Cloudflare Proxy Buffering.
+MJPEG HTTP Streaming Server, Local Web Dashboard & Cloudflare Tunnel untuk Kamera ALPR Smart Parking Gate FT Untirta.
+Menyiarkan live feed webcam langsung ke Web Dashboard secara real-time via Localhost (0 Delay), LAN WiFi, & HTTPS Cloudflare Tunnel.
 """
 
 import os
 import re
 import sys
 import time
+import socket
 import shutil
+import mimetypes
 import subprocess
 import threading
+from urllib.parse import unquote
 from socketserver import ThreadingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import cv2
 import numpy as np
+
+WEB_DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web_dashboard")
+
+
+def get_local_ip():
+    """Mendeteksi alamat IP lokal (WiFi/LAN) perangkat secara otomatis."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
 
 class StreamHub:
@@ -29,8 +46,13 @@ class StreamHub:
         if frame_bgr is None:
             return
         try:
-            # Encode ke JPEG berkualitas baik namun hemat bandwidth
-            ret, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 75])
+            # Optimasi Latensi: Resize ke 640px & JPEG Quality 60 agar ukuran frame ~10-12KB
+            h, w = frame_bgr.shape[:2]
+            target_w = 640
+            target_h = int(h * (target_w / w))
+            stream_frame = cv2.resize(frame_bgr, (target_w, target_h), interpolation=cv2.INTER_AREA)
+
+            ret, buf = cv2.imencode(".jpg", stream_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
             if ret:
                 with self.lock:
                     self.latest_jpeg = buf.tobytes()
@@ -60,13 +82,13 @@ GLOBAL_HUB = StreamHub()
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-    """Server HTTP multi-thread agar setiap koneksi /frame /snapshot /status berjalan paralel tanpa saling memblokir."""
+    """Server HTTP multi-thread agar setiap koneksi berjalan paralel tanpa saling memblokir."""
     daemon_threads = True
     allow_reuse_address = True
 
 
 class MJPEGHandler(BaseHTTPRequestHandler):
-    """Handler HTTP untuk menyiarkan snapshot JPEG, multipart MJPEG stream, dan status."""
+    """Handler HTTP untuk menyiarkan Web Dashboard Lokal, snapshot JPEG, multipart MJPEG stream, dan status."""
 
     def do_OPTIONS(self):
         """Preflight CORS response untuk fetch browser dari Netlify HTTPS."""
@@ -77,8 +99,10 @@ class MJPEGHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        clean_path = unquote(self.path.split('?')[0])
+
         # 1. Endpoint Status / Health Check
-        if self.path.startswith('/status') or self.path.startswith('/health'):
+        if clean_path in ('/status', '/health'):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -90,7 +114,7 @@ class MJPEGHandler(BaseHTTPRequestHandler):
             return
 
         # 2. Endpoint Snapshot JPEG (Single Frame) — 100% Kebal terhadap Cloudflare Proxy Buffering
-        if self.path.startswith('/snapshot') or self.path.startswith('/frame'):
+        if clean_path.startswith('/snapshot') or clean_path.startswith('/frame'):
             jpeg = GLOBAL_HUB.get_jpeg()
             if not jpeg:
                 jpeg = GLOBAL_HUB.get_standby_placeholder()
@@ -107,42 +131,78 @@ class MJPEGHandler(BaseHTTPRequestHandler):
             self.wfile.write(jpeg)
             return
 
-        # 3. Default: Multipart MJPEG Video Feed Stream
-        self.send_response(200)
-        self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', '*')
-        self.send_header('Cache-Control', 'no-cache, private, no-store, must-revalidate')
-        self.send_header('Pragma', 'no-cache')
-        self.end_headers()
+        # 3. Endpoint Multipart MJPEG Video Feed Stream
+        if clean_path.startswith('/video_feed'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', '*')
+            self.send_header('Cache-Control', 'no-cache, private, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.end_headers()
+
+            try:
+                last_sent = 0.0
+                while True:
+                    jpeg = GLOBAL_HUB.get_jpeg()
+                    if not jpeg:
+                        jpeg = GLOBAL_HUB.get_standby_placeholder()
+                    if jpeg and GLOBAL_HUB.last_update != last_sent:
+                        last_sent = GLOBAL_HUB.last_update
+                        self.wfile.write(b'--frame\r\n')
+                        self.wfile.write(b'Content-Type: image/jpeg\r\n')
+                        self.wfile.write(f'Content-Length: {len(jpeg)}\r\n\r\n'.encode('utf-8'))
+                        self.wfile.write(jpeg)
+                        self.wfile.write(b'\r\n')
+                    time.sleep(0.04)  # ~25 FPS
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            except Exception:
+                pass
+            return
+
+        # 4. Layani Web Dashboard Lokal (index.html, gambar, js) langsung dari folder web_dashboard/
+        self._serve_dashboard_file(clean_path)
+
+    def _serve_dashboard_file(self, clean_path):
+        """Melayani file statis Web Dashboard & SPA routing (/dashboard, /security, dll)."""
+        rel_path = clean_path.lstrip('/')
+        if not rel_path or rel_path in ('dashboard', 'trendline', 'vehicle-log', 'security', 'login'):
+            rel_path = 'index.html'
+
+        full_path = os.path.normpath(os.path.join(WEB_DASHBOARD_DIR, rel_path))
+        if not full_path.startswith(os.path.normpath(WEB_DASHBOARD_DIR)) or not os.path.isfile(full_path):
+            # Fallback SPA ke index.html
+            full_path = os.path.join(WEB_DASHBOARD_DIR, 'index.html')
+
+        if not os.path.isfile(full_path):
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        mime_type, _ = mimetypes.guess_type(full_path)
+        if not mime_type:
+            mime_type = 'application/octet-stream'
 
         try:
-            last_sent = 0.0
-            while True:
-                jpeg = GLOBAL_HUB.get_jpeg()
-                if not jpeg:
-                    jpeg = GLOBAL_HUB.get_standby_placeholder()
-                if jpeg and GLOBAL_HUB.last_update != last_sent:
-                    last_sent = GLOBAL_HUB.last_update
-                    self.wfile.write(b'--frame\r\n')
-                    self.wfile.write(b'Content-Type: image/jpeg\r\n')
-                    self.wfile.write(f'Content-Length: {len(jpeg)}\r\n\r\n'.encode('utf-8'))
-                    self.wfile.write(jpeg)
-                    self.wfile.write(b'\r\n')
-                time.sleep(0.04)  # ~25 FPS
-        except (BrokenPipeError, ConnectionResetError):
-            pass
+            with open(full_path, 'rb') as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', mime_type)
+            self.send_header('Content-Length', str(len(data)))
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
+            self.wfile.write(data)
         except Exception:
             pass
 
     def log_message(self, format, *args):
-        # Meredam logging per request frame agar terminal tetap bersih
         return
 
 
 class VideoStreamServer:
-    """Server streaming HTTP multi-thread & Cloudflare Tunnel HTTPS otomatis."""
+    """Server Web Dashboard Lokal + Kamera Streaming HTTP multi-thread & Cloudflare Tunnel otomatis."""
     def __init__(self, host='0.0.0.0', port=5050):
         self.host = host
         self.port = port
@@ -156,7 +216,12 @@ class VideoStreamServer:
             self.server = ThreadedHTTPServer((self.host, self.port), MJPEGHandler)
             self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
             self.server_thread.start()
-            print(f"[OK] Live Camera Web Stream aktif di http://localhost:{self.port}/video_feed")
+            local_ip = get_local_ip()
+            print("\n" + "=" * 70)
+            print("  [WEB DASHBOARD LOKAL & KAMERA LIVE (0 DELAY) SIAP DIGUNAKAN]")
+            print(f"  1. Buka di Perangkat Ini      : http://localhost:{self.port}")
+            print(f"  2. Buka dari Laptop/HP Lain   : http://{local_ip}:{self.port}  (1 WiFi)")
+            print("=" * 70)
 
             # Nyalakan Cloudflare Tunnel otomatis jika tersedia
             self._start_cloudflare_tunnel()
@@ -192,7 +257,7 @@ class VideoStreamServer:
                         print("\n" + "=" * 70)
                         print("  [CLOUDFLARE TUNNEL AKTIF - RESMI HTTPS UNTUK NETLIFY]")
                         print(f"  URL Kamera: {feed_url}")
-                        print("  Salin URL di atas ke tombol [URL Cloudflare] pada Web Dashboard!")
+                        print("  Salin URL di atas ke tombol [URL Cloudflare] jika buka via Netlify!")
                         print("=" * 70 + "\n")
             except Exception as e:
                 print(f"[WARN] Cloudflare Tunnel mengalami kendala: {e}")

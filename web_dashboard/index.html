@@ -1851,10 +1851,14 @@ body.modal-open{overflow:hidden}
   function getCamStreamURL() {
     var saved = localStorage.getItem('spg_cam_url');
     if (saved && saved.trim()) return saved.trim();
-    if (location.protocol === 'https:') {
+    if (location.protocol === 'https:' && location.hostname.includes('netlify.app')) {
       return ''; // Pada Netlify HTTPS, tunggu URL Cloudflare HTTPS yang disetel pengguna
     }
-    return 'http://localhost:5050/video_feed';
+    if (location.port === '5050' || location.hostname.includes('trycloudflare.com')) {
+      return location.origin + '/video_feed';
+    }
+    var host = location.hostname || 'localhost';
+    return 'http://' + host + ':5050/video_feed';
   }
 
   function setCamIndicator(isLive) {
@@ -1928,8 +1932,8 @@ body.modal-open{overflow:hidden}
         }
 
         if (streamActive) {
-          // Siaran lancar ~25 FPS (40ms jeda)
-          streamNextTimer = setTimeout(fetchNext, 38);
+          // Minimalkan latency: ambil frame berikutnya secepat mungkin (12ms)
+          streamNextTimer = setTimeout(fetchNext, 12);
         }
       };
 
